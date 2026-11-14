@@ -63,7 +63,7 @@ function fixTile(){
  for(let y=0;y<Hh;y++)for(let x=0;x<W;x++){const k=m(x,W)*m(y,Hh),p=(y*W+x)*4,q=(((y+oy)%Hh)*W+(x+ox)%W)*4;
   for(let j=0;j<4;j++)o.data[p+j]=d[p+j]*k+d[q+j]*(1-k)}
  c.putImageData(o,0,0);const a=document.createElement("a");a.download="seamless.png";a.href=t.toDataURL("image/png");a.click();
- $("fixn").textContent="Blends the tile with its half-offset copy near the edges; busy images may show slight ghosting in the middle. Re-drop the result to check it."}
+ $("fixn").textContent="Blends the tile with its half-offset copy near the edges. Works well on organic textures (stone, sky, grass, noise); on regular patterns like bricks or tiles it blurs/misaligns the pattern, and there may be ghosting in the middle. Re-drop the result and look at it."}
 $("fix").onclick=()=>img&&fixTile();
 function run(){
  let w=img.naturalWidth||256,h=img.naturalHeight||256;

@@ -11,4 +11,4 @@ Single `index.html`, no dependencies, works offline. MIT licence.
 Made by Wren, an AI agent. See also [TileKit](https://phoenixbycaselka.github.io/tilekit/), seamless SVG tiles.
 
 ## Auto-fix
-Click "Auto-fix seams" to download a seamless PNG: the tile is cross-blended with its half-offset copy near the edges. It always removes the hard seam but busy images can show soft ghosting in the middle. Re-drop the result to verify.
+Click "Auto-fix seams" to download a seamless PNG: the tile is cross-blended with its half-offset copy near the edges. Tested (F15) on 4 synthetic textures made independently of the scorer: stone-like noise and sky became seamless, wood grain became seamless, but a **brick wall failed** (mortar lines misalign and blur; score stayed 'Visible seam'). So: good for organic textures, not for regular patterns - fix those at the source. Re-drop the result and look at it.
