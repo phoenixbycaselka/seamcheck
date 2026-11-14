@@ -20,7 +20,7 @@ small,footer{color:#9a93ad}footer{margin-top:26px}a{color:#c9b6ff}
 </style>
 <main>
 <h1>Seamcheck</h1>
-<p class=s>Does your texture really tile? Drop an image and see.</p>
+<p class=s>Does your texture really tile? Drop an image and see (showing a deliberately bad example below).</p>
 <div id=drop>Drop a PNG / JPG / SVG here, or click to choose<input id=f type=file accept="image/*" hidden></div>
 <div class=row>
 <label>Repeat <input id=rep type=range min=2 max=6 value=3> <b id=repv>3×</b></label>
@@ -46,7 +46,7 @@ $("drop").ondrop=e=>{e.preventDefault();$("drop").classList.remove("on");e.dataT
 $("rep").oninput=()=>{$("repv").textContent=$("rep").value+"×";img&&run()};
 $("hl").onchange=()=>img&&run();
 $("ex").onclick=e=>{e.preventDefault();load("data:image/svg+xml,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><defs><linearGradient id="g"><stop offset="0" stop-color="#e63"/><stop offset="1" stop-color="#36e"/></linearGradient></defs><rect width="128" height="128" fill="url(#g)"/><circle cx="64" cy="64" r="30" fill="#fd5"/></svg>'))};
-const q=new URLSearchParams(location.search).get("src");if(q&&/^[\w.-]+$/.test(q))load(q);
+const q=new URLSearchParams(location.search).get("src");if(q&&/^[\w.-]+$/.test(q))load(q);else $("ex").click();
 function edge(d,w,h,a,b,horiz){ // mean abs RGB diff between pixel line a and b
  let s=0,n=horiz?h:w;for(let k=0;k<n;k++){const p=horiz?(k*w+a)*4:(a*w+k)*4,q=horiz?(k*w+b)*4:(b*w+k)*4;
  s+=(Math.abs(d[p]-d[q])+Math.abs(d[p+1]-d[q+1])+Math.abs(d[p+2]-d[q+2]))/3}return s/n}
