@@ -1,0 +1,62 @@
+// node test/unit.js  - pure-JS tests for weld.js (no browser). Exit code 1 on failure.
+const W = require("../weld.js");
+let fails = 0;
+function eq(name, got, want) { const ok = JSON.stringify(got) === JSON.stringify(want); if (!ok) fails++;
+  console.log((ok ? "ok   " : "FAIL ") + name + (ok ? "" : "  got " + JSON.stringify(got) + " want " + JSON.stringify(want))); }
+function check(name, cond, info) { if (!cond) fails++; console.log((cond ? "ok   " : "FAIL ") + name + (cond ? "" : "  " + (info || ""))); }
+
+// --- minCutPath: hand-computed grids (rows x cols, row-major) ---
+// Grid A: 4 rows x 3 cols. Cheapest |dk|<=1 path is 1,0,0,1 (cost 0) ; straight col 1 costs 0+9+9+0=18.
+const A = Float32Array.from([
+  9, 0, 9,
+  0, 9, 9,
+  0, 9, 9,
+  9, 0, 9]);
+eq("minCut A (free)", Array.from(W.minCutPath(A, 4, 3, false)), [1, 0, 0, 1]);
+// Grid B: 3 rows x 4 cols. Free path jumps 0 -> 1 -> 2 -> ... cheapest free path: 0,1,2 (cost 0),
+// but toroidal requires |end-start|<=1, so best toroidal is 0,1,1 (cost 0+0+1=1) or 1,1,2 (1+0+0=1)
+// -> tie; we only assert the constraint + total cost == 1.
+const B = Float32Array.from([
+  0, 1, 5, 5,
+  5, 0, 5, 5,
+  5, 1, 0, 5]);
+const pb = Array.from(W.minCutPath(B, 3, 4, true));
+const costB = pb.reduce((s, k, r) => s + B[r * 4 + k], 0);
+check("minCut B toroidal wrap constraint", Math.abs(pb[2] - pb[0]) <= 1, JSON.stringify(pb));
+check("minCut B toroidal cost == 1", costB === 1, "cost " + costB + " path " + JSON.stringify(pb));
+check("minCut B steps <=1", pb.every((k, r) => r === 0 || Math.abs(k - pb[r - 1]) <= 1), JSON.stringify(pb));
+eq("minCut B free", Array.from(W.minCutPath(B, 3, 4, false)), [0, 1, 2]);
+// Grid C: single column -> all zeros.
+eq("minCut C 1 col", Array.from(W.minCutPath(Float32Array.from([3, 3, 3]), 3, 1, true)), [0, 0, 0]);
+
+// --- transpose / shift round trips on a 3x2 RGBA buffer with distinct pixels ---
+const w = 3, h = 2, b = new Uint8ClampedArray(w * h * 4);
+for (let i = 0; i < w * h; i++) { b[i * 4] = i; b[i * 4 + 1] = 10 + i; b[i * 4 + 2] = 20 + i; b[i * 4 + 3] = 255; }
+const t = W.transpose(b, w, h);           // now h x w (2 wide, 3 tall)
+check("transpose pixel(1,0) == orig(0,1)", t[(0 * h + 1) * 4] === b[(1 * w + 0) * 4]);
+eq("transpose round trip", Array.from(W.transpose(t, h, w)), Array.from(b));
+const s = W.shift(b, w, h, 1, 1);
+check("shift: out(1,1) == in(0,0)", s[(1 * w + 1) * 4] === b[0]);
+eq("shift round trip", Array.from(W.shift(s, w, h, -1, -1)), Array.from(b));
+
+// --- weld on a synthetic 64x64: smooth noise whose edges don't match (hard step at the wrap) ---
+const N = 64, img = new Uint8ClampedArray(N * N * 4);
+let seed = 7; const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+const base = []; for (let i = 0; i < N * N; i++) base.push(rnd());
+for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+  // low-frequency bump + noise + a linear ramp in x so the left/right edges differ strongly
+  const v = 90 + 60 * Math.sin(x / 7) * Math.cos(y / 5) + 40 * base[y * N + x] + (x / N) * 80;
+  const p = (y * N + x) * 4; img[p] = v; img[p + 1] = v * 0.8; img[p + 2] = v * 0.6; img[p + 3] = 255;
+}
+const before = { x: W.seamRatio(img, N, N, true).ratio, y: W.seamRatio(img, N, N, false).ratio };
+const r = W.weld(img, N, N, 16);
+check("weld: output size", r.out.length === img.length);
+check("weld: x seam improved (" + before.x.toFixed(2) + " -> " + r.after.x.toFixed(2) + ")", r.after.x < before.x);
+check("weld: x seam <= 1.5", r.after.x <= 1.5, r.after.x);
+check("weld: y seam <= 1.5", r.after.y <= 1.5, r.after.y);
+const ws = W.worstSeam(r.out, N, N);
+check("weld: worst interior seam < 2.5 (x " + ws.x.ratio.toFixed(2) + ", y " + ws.y.ratio.toFixed(2) + ")", ws.x.ratio < 2.5 && ws.y.ratio < 2.5);
+check("weld: alpha intact", r.out.every((v, i) => i % 4 !== 3 || v === 255));
+
+console.log(fails ? "\n" + fails + " FAILED" : "\nall passed");
+process.exit(fails ? 1 : 0);
