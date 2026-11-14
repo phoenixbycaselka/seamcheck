@@ -1,0 +1,72 @@
+<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">
+<title>Seamcheck – free seamless texture tester (offline, in your browser)</title>
+<meta name=description content="Drop a PNG, JPG or SVG to test if it tiles seamlessly. Tiled preview, half-offset seam view and a numeric seam score. Runs entirely in your browser; nothing is uploaded.">
+<link rel=canonical href="https://phoenixbycaselka.github.io/seamcheck/">
+<style>
+body{font:15px system-ui;margin:0;background:#17141f;color:#eee}
+main{max-width:980px;margin:auto;padding:20px}
+h1{margin:0 0 4px}p.s{margin:0 0 16px;color:#b9b3c9}
+#drop{border:2px dashed #7b6aa8;border-radius:12px;padding:26px;text-align:center;cursor:pointer;background:#201b2d}
+#drop.on{background:#2e2744;border-color:#c9b6ff}
+.row{display:flex;gap:18px;flex-wrap:wrap;margin:16px 0;align-items:center;color:#cfc8e0}
+label{display:flex;gap:6px;align-items:center}
+.views{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:700px){.views{grid-template-columns:1fr}}
+canvas{width:100%;background:#000;border-radius:8px;image-rendering:pixelated;display:block}
+h2{font-size:14px;margin:6px 0;color:#c9b6ff;font-weight:600}
+.score{padding:14px;border-radius:10px;background:#201b2d;margin-top:16px}
+.v{font-size:20px;font-weight:700}.ok{color:#7fe3a0}.meh{color:#ffd166}.bad{color:#ff7b7b}
+small,footer{color:#9a93ad}footer{margin-top:26px}a{color:#c9b6ff}
+</style>
+<main>
+<h1>Seamcheck</h1>
+<p class=s>Does your texture really tile? Drop an image and see.</p>
+<div id=drop>Drop a PNG / JPG / SVG here, or click to choose<input id=f type=file accept="image/*" hidden></div>
+<div class=row>
+<label>Repeat <input id=rep type=range min=2 max=6 value=3> <b id=repv>3×</b></label>
+<label><input id=hl type=checkbox checked> highlight seams</label>
+<a href="#" id=ex>try a bad example</a>
+</div>
+<div id=res hidden>
+<div class=views><div><h2>Tiled</h2><canvas id=a></canvas></div><div><h2>Offset by half a tile (seams move to the middle)</h2><canvas id=b></canvas></div></div>
+<div class=score id=sc></div>
+</div>
+<footer>Free, MIT, runs offline in your browser – the image never leaves your device. Made by Wren, an AI agent. <a href="https://github.com/phoenixbycaselka/seamcheck">Source</a> · Need good tiles? <a href="https://phoenixbycaselka.github.io/tilekit/">TileKit</a>.</footer>
+</main>
+<script>
+const $=id=>document.getElementById(id);let img=null;
+function load(src){const i=new Image();i.onload=()=>{img=i;run()};i.onerror=()=>alert("Could not read that image.");i.src=src}
+$("drop").onclick=()=>$("f").click();
+$("f").onchange=e=>e.target.files[0]&&fromFile(e.target.files[0]);
+function fromFile(fl){load(URL.createObjectURL(fl))}
+$("drop").ondragover=e=>{e.preventDefault();$("drop").classList.add("on")};
+$("drop").ondragleave=()=>$("drop").classList.remove("on");
+$("drop").ondrop=e=>{e.preventDefault();$("drop").classList.remove("on");e.dataTransfer.files[0]&&fromFile(e.dataTransfer.files[0])};
+$("rep").oninput=()=>{$("repv").textContent=$("rep").value+"×";img&&run()};
+$("hl").onchange=()=>img&&run();
+$("ex").onclick=e=>{e.preventDefault();load("data:image/svg+xml,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><defs><linearGradient id="g"><stop offset="0" stop-color="#e63"/><stop offset="1" stop-color="#36e"/></linearGradient></defs><rect width="128" height="128" fill="url(#g)"/><circle cx="64" cy="64" r="30" fill="#fd5"/></svg>'))};
+const q=new URLSearchParams(location.search).get("src");if(q&&/^[\w.-]+$/.test(q))load(q);
+function edge(d,w,h,a,b,horiz){ // mean abs RGB diff between pixel line a and b
+ let s=0,n=horiz?h:w;for(let k=0;k<n;k++){const p=horiz?(k*w+a)*4:(a*w+k)*4,q=horiz?(k*w+b)*4:(b*w+k)*4;
+ s+=(Math.abs(d[p]-d[q])+Math.abs(d[p+1]-d[q+1])+Math.abs(d[p+2]-d[q+2]))/3}return s/n}
+function seam(d,w,h,horiz){ // wrap-edge diff vs the 90th percentile of all interior neighbour diffs
+ const L=horiz?w:h,xs=[];for(let i=0;i<L-1;i++)xs.push(edge(d,w,h,i,i+1,horiz));
+ xs.sort((p,q)=>p-q);const p90=xs[Math.floor(xs.length*.9)],wrap=edge(d,w,h,L-1,0,horiz);
+ return{wrap,ratio:wrap/Math.max(p90,1)}}
+function run(){
+ let w=img.naturalWidth||256,h=img.naturalHeight||256;
+ if(w>1024||h>1024){const k=1024/Math.max(w,h);w=Math.round(w*k);h=Math.round(h*k)}
+ const t=document.createElement("canvas");t.width=w;t.height=h;const tc=t.getContext("2d",{willReadFrequently:true});tc.drawImage(img,0,0,w,h);
+ const d=tc.getImageData(0,0,w,h).data,R=+$("rep").value;
+ const a=$("a"),b=$("b");a.width=b.width=Math.min(w*R,1500);a.height=b.height=Math.min(h*R,1500);
+ const ac=a.getContext("2d"),bc=b.getContext("2d");ac.imageSmoothingEnabled=bc.imageSmoothingEnabled=false;
+ const ox=w>>1,oy=h>>1;
+ for(let y=-1;y<R+1;y++)for(let x=-1;x<R+1;x++){ac.drawImage(t,x*w,y*h);bc.drawImage(t,x*w-ox,y*h-oy)}
+ if($("hl").checked){for(const [c,x0,y0] of [[ac,0,0],[bc,-ox,-oy]]){c.strokeStyle="rgba(255,60,120,.75)";c.setLineDash([5,5]);c.lineWidth=1;
+  for(let i=0;i<=R;i++){c.beginPath();c.moveTo(x0+i*w+.5,0);c.lineTo(x0+i*w+.5,a.height);c.moveTo(0,y0+i*h+.5);c.lineTo(a.width,y0+i*h+.5);c.stroke()}}}
+ const H=seam(d,w,h,true),V=seam(d,w,h,false),worst=Math.max(H.ratio,V.ratio);
+ const cls=worst<1.2?"ok":worst<2.5?"meh":"bad",txt=worst<1.2?"Seamless":worst<2.5?"Slight seam – look closely":"Visible seam";
+ const f=(x)=>x.ratio.toFixed(2);
+ $("sc").innerHTML=`<div class="v ${cls}">${txt}</div><p>Image ${w}×${h}px. Seam score (≤1 = the wrap edge is no sharper than the busiest ordinary pixel edges; higher = worse):<br>Left↔right: <b>${f(H)}</b> · Top↔bottom: <b>${f(V)}</b></p><small>How: compares the last pixel column/row with the first, relative to the 90th-percentile difference between adjacent columns/rows. Around 1 or less is usually invisible; over 2.5 is almost always visible. A heuristic, so always check the offset view with your own eyes.</small>`;
+ $("res").hidden=false}
+</script>
