@@ -20,7 +20,7 @@ small,footer{color:#9a93ad}footer{margin-top:26px}a{color:#c9b6ff}
 </style>
 <main>
 <h1>Seamcheck</h1>
-<p class=s>Does your texture really tile? Drop an image and see (showing a deliberately bad example below).</p>
+<p class=s>Does your texture really tile? Drop an image and see<span id=exnote> (showing a deliberately bad example below)</span>.</p>
 <div id=drop>Drop a PNG / JPG / SVG here, or click to choose<input id=f type=file accept="image/*" hidden></div>
 <div class=row>
 <label>Repeat <input id=rep type=range min=2 max=6 value=3> <b id=repv>3×</b></label>
@@ -39,14 +39,14 @@ const $=id=>document.getElementById(id);let img=null;
 function load(src){const i=new Image();i.onload=()=>{img=i;run()};i.onerror=()=>alert("Could not read that image.");i.src=src}
 $("drop").onclick=()=>$("f").click();
 $("f").onchange=e=>e.target.files[0]&&fromFile(e.target.files[0]);
-function fromFile(fl){load(URL.createObjectURL(fl))}
+function fromFile(fl){$("exnote").hidden=true;load(URL.createObjectURL(fl))}
 $("drop").ondragover=e=>{e.preventDefault();$("drop").classList.add("on")};
 $("drop").ondragleave=()=>$("drop").classList.remove("on");
 $("drop").ondrop=e=>{e.preventDefault();$("drop").classList.remove("on");e.dataTransfer.files[0]&&fromFile(e.dataTransfer.files[0])};
 $("rep").oninput=()=>{$("repv").textContent=$("rep").value+"×";img&&run()};
 $("hl").onchange=()=>img&&run();
-$("ex").onclick=e=>{e.preventDefault();load("data:image/svg+xml,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><defs><linearGradient id="g"><stop offset="0" stop-color="#e63"/><stop offset="1" stop-color="#36e"/></linearGradient></defs><rect width="128" height="128" fill="url(#g)"/><circle cx="64" cy="64" r="30" fill="#fd5"/></svg>'))};
-const q=new URLSearchParams(location.search).get("src");if(q&&/^[\w.-]+$/.test(q))load(q);else $("ex").click();
+$("ex").onclick=e=>{e.preventDefault();$("exnote").hidden=false;load("data:image/svg+xml,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><defs><linearGradient id="g"><stop offset="0" stop-color="#e63"/><stop offset="1" stop-color="#36e"/></linearGradient></defs><rect width="128" height="128" fill="url(#g)"/><circle cx="64" cy="64" r="30" fill="#fd5"/></svg>'))};
+const q=new URLSearchParams(location.search).get("src");if(q&&/^[\w.-]+$/.test(q)){$("exnote").hidden=true;load(q)}else $("ex").click();
 function edge(d,w,h,a,b,horiz){ // mean abs RGB diff between pixel line a and b
  let s=0,n=horiz?h:w;for(let k=0;k<n;k++){const p=horiz?(k*w+a)*4:(a*w+k)*4,q=horiz?(k*w+b)*4:(b*w+k)*4;
  s+=(Math.abs(d[p]-d[q])+Math.abs(d[p+1]-d[q+1])+Math.abs(d[p+2]-d[q+2]))/3}return s/n}
@@ -74,11 +74,14 @@ function run(){
  const ac=a.getContext("2d"),bc=b.getContext("2d");ac.imageSmoothingEnabled=bc.imageSmoothingEnabled=false;
  const ox=w>>1,oy=h>>1;
  for(let y=-1;y<R+1;y++)for(let x=-1;x<R+1;x++){ac.drawImage(t,x*w,y*h);bc.drawImage(t,x*w-ox,y*h-oy)}
- if($("hl").checked){for(const [c,x0,y0] of [[ac,0,0],[bc,-ox,-oy]]){c.strokeStyle="rgba(255,60,120,.75)";c.setLineDash([5,5]);c.lineWidth=1;
-  for(let i=0;i<=R;i++){c.beginPath();c.moveTo(x0+i*w+.5,0);c.lineTo(x0+i*w+.5,a.height);c.moveTo(0,y0+i*h+.5);c.lineTo(a.width,y0+i*h+.5);c.stroke()}}}
  const H=seam(d,w,h,true),V=seam(d,w,h,false),worst=Math.max(H.ratio,V.ratio);
+ if($("hl").checked){const sty=r=>r<1.2?["rgba(255,255,255,.35)",1,[3,5]]:r<2.5?["#ffc94a",2,[6,4]]:["#ff2d6f",3,[8,4]];
+  const line=(c,x1,y1,x2,y2,[col,lw,dash])=>{if(x1==x2?(x1<2||x1>a.width-2):(y1<2||y1>a.height-2))return;c.setLineDash([]);c.strokeStyle=lw>1?"rgba(0,0,0,.6)":"rgba(0,0,0,.2)";c.lineWidth=lw+(lw>1?2:1);c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke();
+   c.setLineDash(dash);c.strokeStyle=col;c.lineWidth=lw;c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke()};
+  for(const [c,x0,y0] of [[ac,0,0],[bc,-ox,-oy]])for(let i=0;i<=R+1;i++){
+   line(c,x0+i*w+.5,0,x0+i*w+.5,a.height,sty(H.ratio));line(c,0,y0+i*h+.5,a.width,y0+i*h+.5,sty(V.ratio))}}
  const cls=worst<1.2?"ok":worst<2.5?"meh":"bad",txt=worst<1.2?"Seamless":worst<2.5?"Slight seam – look closely":"Visible seam";
  const f=(x)=>x.ratio.toFixed(2);
- $("sc").innerHTML=`<div class="v ${cls}">${txt}</div><p>Image ${w}×${h}px. Seam score (≤1 = the wrap edge is no sharper than the busiest ordinary pixel edges; higher = worse):<br>Left↔right: <b>${f(H)}</b> · Top↔bottom: <b>${f(V)}</b></p><small>How: compares the last pixel column/row with the first, relative to the 90th-percentile difference between adjacent columns/rows. Around 1 or less is usually invisible; over 2.5 is almost always visible. A heuristic, so always check the offset view with your own eyes.</small>`;
+ $("sc").innerHTML=`<div class="v ${cls}">${txt}</div><p>Image ${w}×${h}px. Seam score (≤1 = the wrap edge is no sharper than the busiest ordinary pixel edges; higher = worse):<br>Left↔right: <b>${f(H)}</b> · Top↔bottom: <b>${f(V)}</b><br><small>Seam lines: <span style="color:#ff2d6f">thick pink = visible</span>, <span style="color:#ffc94a">amber = slight</span>, faint white = fine.</small></p><small>How: compares the last pixel column/row with the first, relative to the 90th-percentile difference between adjacent columns/rows. Around 1 or less is usually invisible; over 2.5 is almost always visible. A heuristic, so always check the offset view with your own eyes.</small>`;
  $("res").hidden=false}
 </script>
