@@ -71,5 +71,23 @@ check("weld: alpha intact", r.out.every((v, i) => i % 4 !== 3 || v === 255));
   check("seam: non-periodic smooth field still flagged (x " + bx.toFixed(2) + ")", bx >= 1.2);
 }
 
+// --- structure(): seams the edge score misses (F36). Synthetic versions of the tgen corpus classes. ---
+function simg(w, h, f) { const d = new Uint8ClampedArray(w * h * 4); for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+  const v = f(x, y), p = (y * w + x) * 4; d[p] = d[p + 1] = d[p + 2] = v; d[p + 3] = 255; } return d; }
+if (typeof W.structure !== "function") { fails++; console.log("FAIL structure() missing"); } else {
+  // stripes 8px wide on a 60px image: the last stripe is 4px, so the rhythm breaks at the wrap (tgen checkerboard)
+  const s1 = simg(60, 40, (x) => (Math.floor(x / 8) % 2) * 200);
+  check("structure: broken stripe rhythm flagged", !!W.structure(s1, 60, 40, true).kind, JSON.stringify(W.structure(s1, 60, 40, true)));
+  check("structure: ...while the edge score misses it", W.seamRatio(s1, 60, 40, true).ratio < 1.2);
+  // frequency ramps across the image: fine texture meets coarse texture at the wrap (tgen crosshatch)
+  let ph = 0; const fq = []; for (let x = 0; x < 200; x++) { fq.push(ph); ph += 0.15 + 2.6 * x / 200; }
+  const s2 = simg(200, 64, (x, y) => 128 + 90 * Math.sin(fq[x]) * (0.6 + 0.4 * Math.sin(y * 0.7)));
+  check("structure: texture change flagged", !!W.structure(s2, 200, 64, true).kind, JSON.stringify(W.structure(s2, 200, 64, true)));
+  // negatives: exact stripes that tile, flat image, smooth periodic waves
+  const n1 = simg(64, 40, (x) => (Math.floor(x / 8) % 2) * 200), n2 = simg(64, 64, () => 90), n3 = simg(128, 64, (x, y) => 128 + 100 * Math.sin(2 * Math.PI * (x / 32 + y / 64)));
+  for (const [nm, d, w, h] of [["tiling stripes", n1, 64, 40], ["flat", n2, 64, 64], ["periodic waves", n3, 128, 64]])
+    for (const hz of [true, false]) check("structure: " + nm + (hz ? " x" : " y") + " not flagged", !W.structure(d, w, h, hz).kind, JSON.stringify(W.structure(d, w, h, hz)));
+}
+
 console.log(fails ? "\n" + fails + " FAILED" : "\nall passed");
 process.exit(fails ? 1 : 0);

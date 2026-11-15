@@ -141,6 +141,43 @@
     return { out, cx, cost: bestCost, S, cut: Math.max(cutL, cutR) / H };
   }
 
+  // Seams the edge score can't see (F36, from the tgen corpus in test/corpus-gen): the pixels either side of
+  // the wrap match, but the texture's activity jumps (tex), the slope flips (kink: a cusp), or a repeating
+  // pattern loses its phase (period). Thresholds were fixed on the corpus and checked on a 30-image holdout
+  // plus 7 welded photos with 0 new false positives. Returns {tex, kink, period, kind} (kind null = none).
+  function structure(d, w, h, horiz) {
+    const L = horiz ? w : h, n = horiz ? h : w, st = Math.max(1, Math.floor(n / 128)), m = Math.floor(n / st), Pr = [];
+    for (let i = 0; i < L; i++) { const o = new Float32Array(m);
+      for (let k = 0; k < m; k++) { const p = horiz ? ((k * st) * w + i) * 4 : (i * w + k * st) * 4; o[k] = (d[p] + d[p + 1] + d[p + 2]) / 3; }
+      Pr.push(o); }
+    const md = (a, b) => { let s = 0; for (let k = 0; k < m; k++) s += Math.abs(a[k] - b[k]); return s / m; };
+    const pct = (xs, q) => { const s = xs.slice().sort((a, b) => a - b); return s[Math.floor((s.length - 1) * q)]; };
+    const out = { tex: 0, kink: 0, period: 0, kind: null };
+    if (L < 24) return out;
+    // kink: second difference straddling the wrap vs interior p90
+    const d2 = (i) => { const a = Pr[(i - 1 + L) % L], b = Pr[i], c = Pr[(i + 1) % L]; let s = 0; for (let k = 0; k < m; k++) s += Math.abs(a[k] - 2 * b[k] + c[k]); return s / m; };
+    const K = []; for (let i = 2; i < L - 2; i++) K.push(d2(i));
+    out.kink = Math.max(d2(0), d2(L - 1)) / Math.max(pct(K, 0.9), 1);
+    // tex: per sample, activity in R lines left vs right of a boundary, mean |log ratio|; wrap vs interior p95
+    const R = 8, e = 4, A = [];
+    for (let i = 0; i < L; i++) { const a = Pr[i], b = Pr[(i + 1) % L], o = new Float32Array(m); for (let k = 0; k < m; k++) o[k] = Math.abs(b[k] - a[k]); A.push(o); }
+    const at = (bd) => { let s = 0; for (let k = 0; k < m; k++) { let l = 0, r = 0;
+      for (let j = 1; j <= R; j++) { l += A[(bd - j - 1 + 2 * L) % L][k]; r += A[(bd + j) % L][k]; }
+      s += Math.abs(Math.log((l / R + e) / (r / R + e))); } return s / m; };
+    const X = []; for (let b = R + 2; b < L - R - 2; b++) X.push(at(b));
+    out.tex = at(0) / Math.max(pct(X, 0.95), 0.02);
+    // period: only for near-exactly repeating images; do lines straddling the wrap break the period?
+    const d1 = []; for (let i = 0; i < L - 1; i++) d1.push(md(Pr[i], Pr[i + 1]));
+    const typ = Math.max(pct(d1, 0.5), 1); let best = Infinity, T = 0;
+    for (let t = 2; t <= Math.min(Math.floor(L / 3), 256); t++) { let s = 0, c = 0; for (let i = 0; i + t < L; i++) { s += md(Pr[i], Pr[i + t]); c++; } if (s / c < best) { best = s / c; T = t; } }
+    if (best < 0.1 * typ) { const I = []; for (let i = 0; i + T < L; i++) I.push(md(Pr[i], Pr[i + T]));
+      let cr = 0; for (let i = L - T; i < L; i++) cr = Math.max(cr, md(Pr[i], Pr[(i + T) % L]));
+      out.period = cr / Math.max(pct(I, 0.99), 1); }
+    out.kind = out.period > 3 ? "the repeating pattern breaks its rhythm" : out.tex > 1.8 ? "the texture changes (finer or coarser)"
+      : out.kink > 2.5 ? "shapes bend or jump instead of continuing smoothly" : null;
+    return out;
+  }
+
   // Typical difference between horizontally adjacent pixels (mean abs RGB), sampled. Reference for cut cost.
   function neighbourDiff(buf, W, H) {
     let s = 0, n = 0;
@@ -172,5 +209,5 @@
 
   function defaultWidth(W, H) { return Math.max(24, Math.min(160, Math.round(Math.min(W, H) / 6))); }
 
-  return { edge, seamRatio, worstSeam, minCutPath, transpose, shift, weldVertical, weld, defaultWidth };
+  return { edge, seamRatio, structure, worstSeam, minCutPath, transpose, shift, weldVertical, weld, defaultWidth };
 });
