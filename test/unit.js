@@ -58,5 +58,18 @@ const ws = W.worstSeam(r.out, N, N);
 check("weld: worst interior seam < 2.5 (x " + ws.x.ratio.toFixed(2) + ", y " + ws.y.ratio.toFixed(2) + ")", ws.x.ratio < 2.5 && ws.y.ratio < 2.5);
 check("weld: alpha intact", r.out.every((v, i) => i % 4 !== 3 || v === 255));
 
+// --- seam score on hard-edged patterns (F34: a perfect 16px checkerboard used to score ~57 = "Visible seam") ---
+{ const M = 64, cb = new Uint8ClampedArray(M * M * 4);
+  for (let y = 0; y < M; y++) for (let x = 0; x < M; x++) { const v = ((x >> 4) + (y >> 4)) % 2 ? 200 : 20, i = (y * M + x) * 4; cb[i] = cb[i + 1] = cb[i + 2] = v; cb[i + 3] = 255; }
+  const cx = W.seamRatio(cb, M, M, true).ratio, cy = W.seamRatio(cb, M, M, false).ratio;
+  check("seam: tiling checkerboard scores seamless (x " + cx.toFixed(2) + ", y " + cy.toFixed(2) + ")", cx < 1.2 && cy < 1.2);
+  // smooth non-periodic field (sinusoids with periods that don't divide 60): a real wrap seam, must stay flagged
+  const M2 = 60, cc = new Uint8ClampedArray(M2 * M2 * 4);
+  for (let y = 0; y < M2; y++) for (let x = 0; x < M2; x++) { const v = 128 + 50 * Math.sin(x / 7.3) + 40 * Math.cos(y / 5.1 + x / 11), i = (y * M2 + x) * 4;
+    cc[i] = cc[i + 1] = cc[i + 2] = v; cc[i + 3] = 255; }
+  const bx = W.seamRatio(cc, M2, M2, true).ratio;
+  check("seam: non-periodic smooth field still flagged (x " + bx.toFixed(2) + ")", bx >= 1.2);
+}
+
 console.log(fails ? "\n" + fails + " FAILED" : "\nall passed");
 process.exit(fails ? 1 : 0);

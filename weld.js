@@ -18,12 +18,21 @@
     return s / n;
   }
   // Wrap-edge diff vs the 90th percentile of interior neighbour diffs. ratio <= ~1 means seamless.
+  // Exception: if the wrap edge's per-pixel profile nearly reproduces an interior edge (within 15%),
+  // it is a pattern edge (checkerboard cell), not a seam; then the leftover mismatch is scored instead.
   function seamRatio(d, w, h, horiz) {
-    const L = horiz ? w : h, xs = [];
-    for (let i = 0; i < L - 1; i++) xs.push(edge(d, w, h, i, i + 1, horiz));
+    const L = horiz ? w : h, n = horiz ? h : w, xs = [], P = [];
+    const prof = (a, b) => { const o = new Float32Array(n); for (let k = 0; k < n; k++) {
+      const p = horiz ? (k * w + a) * 4 : (a * w + k) * 4, q = horiz ? (k * w + b) * 4 : (b * w + k) * 4;
+      o[k] = (Math.abs(d[p] - d[q]) + Math.abs(d[p + 1] - d[q + 1]) + Math.abs(d[p + 2] - d[q + 2])) / 3; } return o; };
+    const mean = (o) => { let s = 0; for (let k = 0; k < n; k++) s += o[k]; return s / n; };
+    for (let i = 0; i < L - 1; i++) { const o = prof(i, i + 1); P.push(o); xs.push(mean(o)); }
     xs.sort((p, q) => p - q);
-    const p90 = xs[Math.floor(xs.length * 0.9)], wrap = edge(d, w, h, L - 1, 0, horiz);
-    return { wrap, p90, ratio: wrap / Math.max(p90, 1) };
+    const p90 = xs[Math.floor(xs.length * 0.9)], wp = prof(L - 1, 0), wrap = mean(wp);
+    let match = Infinity;
+    for (const o of P) { let t = 0; for (let k = 0; k < n && t < match * n; k++) t += Math.abs(wp[k] - o[k]); if (t / n < match) match = t / n; }
+    const eff = match <= 0.15 * wrap ? match : wrap;
+    return { wrap, p90, match, ratio: eff / Math.max(p90, 1) };
   }
   // Worst boundary anywhere (interior AND wrap), per axis, relative to that axis's p90. Catches bad cuts.
   function worstSeam(d, w, h) {

@@ -65,10 +65,7 @@ const q=new URLSearchParams(location.search).get("src");if(q&&/^[\w.-]+$/.test(q
 function edge(d,w,h,a,b,horiz){ // mean abs RGB diff between pixel line a and b
  let s=0,n=horiz?h:w;for(let k=0;k<n;k++){const p=horiz?(k*w+a)*4:(a*w+k)*4,q=horiz?(k*w+b)*4:(b*w+k)*4;
  s+=(Math.abs(d[p]-d[q])+Math.abs(d[p+1]-d[q+1])+Math.abs(d[p+2]-d[q+2]))/3}return s/n}
-function seam(d,w,h,horiz){ // wrap-edge diff vs the 90th percentile of all interior neighbour diffs
- const L=horiz?w:h,xs=[];for(let i=0;i<L-1;i++)xs.push(edge(d,w,h,i,i+1,horiz));
- xs.sort((p,q)=>p-q);const p90=xs[Math.floor(xs.length*.9)],wrap=edge(d,w,h,L-1,0,horiz);
- return{wrap,ratio:wrap/Math.max(p90,1)}}
+function seam(d,w,h,horiz){return Weld.seamRatio(d,w,h,horiz)} // shared with weld.js (wrap diff vs p90, pattern-edge aware)
 
 function raster(){let w=img.naturalWidth||256,h=img.naturalHeight||256;if(w>1024||h>1024){const k=1024/Math.max(w,h);w=Math.round(w*k);h=Math.round(h*k)}
  const t=document.createElement("canvas");t.width=w;t.height=h;const c=t.getContext("2d",{willReadFrequently:true});c.drawImage(img,0,0,w,h);return{t,c,w,h,d:c.getImageData(0,0,w,h).data}}
@@ -119,6 +116,6 @@ function run(){
    if(V.ratio>=2.5)line(c,0,Y,a.width,Y,sty(V.ratio));else{line(c,0,Y,T,Y,sty(V.ratio));line(c,a.width-T,Y,a.width,Y,sty(V.ratio))}}}
  const cls=worst<1.2?"ok":worst<2.5?"meh":"bad",txt=worst<1.2?"Seamless":worst<2.5?"Slight seam – look closely":"Visible seam";
  const f=(x)=>x.ratio.toFixed(2);
- $("sc").innerHTML=`<div class="v ${cls}">${txt}</div><p>Image ${w}×${h}px. Seam score (≤1 = the wrap edge is no sharper than the busiest ordinary pixel edges; higher = worse):<br>Left↔right: <b>${f(H)}</b> · Top↔bottom: <b>${f(V)}</b><br><small>Seam lines: <span style="color:#ff2d6f">thick pink = visible</span>, <span style="color:#ffc94a">amber = slight</span>, faint white = fine. Slight/fine seams get edge ticks only so you can see the pixels.</small></p><small>How: compares the last pixel column/row with the first, relative to the 90th-percentile difference between adjacent columns/rows. Around 1 or less is usually invisible; over 2.5 is almost always visible. A heuristic, so always check the offset view with your own eyes.</small>`;
+ $("sc").innerHTML=`<div class="v ${cls}">${txt}</div><p>Image ${w}×${h}px. Seam score (≤1 = the wrap edge is no sharper than the busiest ordinary pixel edges; higher = worse):<br>Left↔right: <b>${f(H)}</b> · Top↔bottom: <b>${f(V)}</b><br><small>Seam lines: <span style="color:#ff2d6f">thick pink = visible</span>, <span style="color:#ffc94a">amber = slight</span>, faint white = fine. Slight/fine seams get edge ticks only so you can see the pixels.</small></p><small>How: compares the last pixel column/row with the first, relative to the 90th-percentile difference between adjacent columns/rows (if the wrap reproduces an edge already inside the image, like a checkerboard cell edge, only the leftover mismatch counts). Around 1 or less is usually invisible; over 2.5 is almost always visible. A heuristic, so always check the offset view with your own eyes.</small>`;
  $("res").hidden=false;$("sw").value=Weld.defaultWidth(w,h);$("swv").textContent=$("sw").value+"px";$("wres").hidden=true;window.__loaded=true}
 </script>

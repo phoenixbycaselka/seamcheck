@@ -32,12 +32,21 @@ An imperfect case, so you can judge for yourself (strong diagonal structure; sco
 ![before and after weld, sandstone photo](docs/before-after-sandstone.jpg)
 
 **Honest limits.** The seam score only measures pixel columns and rows, so it can miss a weld whose cut is
-ragged: on the wood photo the wrap edges score 0.5 but the weld line is plainly visible because the grain runs
+ragged: on the wood photo the wrap edges score 0.00 (the weld copies the pixels across the wrap from inside the image) but the weld line is plainly visible because the grain runs
 in one direction and no horizontal shift lines it up. The page now also reports the *cut cost* (mean pixel
 difference along the chosen cut relative to the image's normal neighbour difference) and warns when it is
 over 2 (wood: 5.1; the other six: 0.5–1.3). Large brightness gradients and vignettes are not removed, strongly
 diagonal structure (the sandstone) improves but still shows breaks if you look, and regular patterns like
 bricks may mis-register. Always look at the offset view yourself.
+
+**Patterns with sharp edges** (checkerboards, stripes, grids). Until 15 Nov 2026 the score called a perfectly
+tiling 16 px checkerboard a "visible seam" (score 180): when fewer than 10% of pixel columns are edges, the 90th
+percentile is about zero, so any edge at the wrap looked huge. Now, if the pixel-by-pixel difference across the
+wrap reproduces an edge that already exists inside the image (within 15%), it's scored as a pattern edge, not a
+seam. The 7 photo scores above are unchanged. **Known miss:** a seam where the *pattern* changes but brightness
+doesn't jump (e.g. a fine weave that switches frequency at the edge, as in the
+[tgen crosshatch case](https://github.com/schalkt/tgen/issues/34)) scores as seamless. The score only sees
+one-pixel differences, so use your eyes on the offset view.
 
 Tests: `node test/unit.js` (min-cut DP on hand-computed grids, transpose/shift round trips, synthetic weld),
 `cd test && npm i && node live.js` (the 7 photos through the page), `node test/demo.js img out.jpg` (before/after image).
