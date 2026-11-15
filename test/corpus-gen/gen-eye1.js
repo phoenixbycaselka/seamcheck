@@ -3,10 +3,17 @@
 const os = require("os"), fs = require("fs"), path = require("path"), { withPage } = require(os.homedir() + "/tools/pshot.js");
 const out = path.join(__dirname, "eye1"); fs.mkdirSync(out, { recursive: true });
 const C = [];
-const S = [31337, 9001, 271828, 141421, 60606, 777];
-for (const e of ["crosshatch", "checkerboard"]) for (const s of S) C.push(["h", e, { seed: s }]);
-for (const s of [31337, 777]) for (const w of [1, 2, 3, 4, 5]) C.push(["h", "lines3", { seed: s, waves: w }]);
-for (const e of ["squares", "clouds", "cells"]) for (const s of [31337, 9001]) C.push(["h", e, { seed: s }]);
+if (process.env.BATCH === "2") {
+  const S = [12345, 54321, 99991, 3141, 1618, 2718];
+  for (const e of ["crosshatch", "checkerboard"]) for (const s of S) C.push(["h2", e, { seed: s }]);
+  for (const w of [1, 2, 3, 4, 5]) C.push(["h2", "lines3", { seed: 12345, waves: w }]);
+  for (const e of ["marble", "noise"]) for (const s of [12345, 54321]) C.push(["h2", e, { seed: s }]);
+} else {
+  const S = [31337, 9001, 271828, 141421, 60606, 777];
+  for (const e of ["crosshatch", "checkerboard"]) for (const s of S) C.push(["h", e, { seed: s }]);
+  for (const s of [31337, 777]) for (const w of [1, 2, 3, 4, 5]) C.push(["h", "lines3", { seed: s, waves: w }]);
+  for (const e of ["squares", "clouds", "cells"]) for (const s of [31337, 9001]) C.push(["h", e, { seed: s }]);
+}
 withPage(async (page, go) => {
   await go(path.join(__dirname, "blank.html"));
   await page.addScriptTag({ path: path.join(os.homedir(), "src/tgen/dist/tgen.min.js") });

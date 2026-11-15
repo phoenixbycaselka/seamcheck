@@ -43,3 +43,24 @@ h-pp-waves-dusk.png,bad,x,eye 2x (wave jumps at x wrap)
 h-pp-waves-earth.png,bad,x,eye 2x
 h-squares-seed31337.png,good,,eye 2x
 h-squares-seed9001.png,good,,eye 2x (faint boundary off the wrap)
+h2-checkerboard-seed12345.png,bad,x,measured runs (x one 4 among 12; y exact 64)
+h2-checkerboard-seed1618.png,bad,x,measured runs (x 9 among 13; y exact 64)
+h2-checkerboard-seed2718.png,bad,x,measured runs (x 22 among 26; y exact 128)
+h2-checkerboard-seed3141.png,bad,xy,measured runs (x 3 among 11; y 13 among 9)
+h2-checkerboard-seed54321.png,bad,xy,measured runs (x 9 among 13; y 25 among 21)
+h2-checkerboard-seed99991.png,bad,y,measured runs (x exact 64; y 6 among 10)
+h2-crosshatch-seed12345.png,bad,y,eye 4x (brightness step exactly on y wrap)
+h2-crosshatch-seed1618.png,?,,eye 4x: maybe faint line on y wrap
+h2-crosshatch-seed2718.png,good,,all black (tgen gave a flat tile)
+h2-crosshatch-seed3141.png,bad,y,eye 4x (fine above / blurry below, on y wrap)
+h2-crosshatch-seed54321.png,?,,eye 4x: possible step near y wrap
+h2-crosshatch-seed99991.png,bad,x,eye 2x (fine left / coarse right)
+h2-lines3-seed12345-waves1.png,good,,eye 2x
+h2-lines3-seed12345-waves2.png,good,,eye 2x
+h2-lines3-seed12345-waves3.png,good,,eye 2x
+h2-lines3-seed12345-waves4.png,good,,eye 2x
+h2-lines3-seed12345-waves5.png,good,,eye 2x
+h2-marble-seed12345.png,good,,eye 2x
+h2-marble-seed54321.png,good,,eye 2x
+h2-noise-seed12345.png,good,,eye 2x
+h2-noise-seed54321.png,good,,eye 2x
