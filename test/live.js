@@ -15,7 +15,7 @@ const root = path.resolve(__dirname, ".."), imgs = process.argv.slice(2).length 
   for (const f of imgs) {
     const name = path.basename(f, path.extname(f));
     try {
-      const input = await page.$("#file"); await input.uploadFile(f);
+      const input = await page.$("#f"); await input.uploadFile(f);
       await page.waitForFunction(() => window.__loaded === true, { timeout: 20000 });
       await page.evaluate(() => { window.__weld = null; window.__loaded = false; });
       await page.click("#fix");
@@ -24,7 +24,7 @@ const root = path.resolve(__dirname, ".."), imgs = process.argv.slice(2).length 
       const png = await page.evaluate(() => document.getElementById("resc").toDataURL("image/png"));
       fs.writeFileSync(path.join(__dirname, "out", name + "-welded.png"), Buffer.from(png.split(",")[1], "base64"));
       await page.screenshot({ path: path.join(__dirname, "out", name + "-page.png") });
-      rows.push({ name: name.slice(0, 28), S: r.S, ms: r.ms, bx: r.before.x.toFixed(2), by: r.before.y.toFixed(2), ax: r.after.x.toFixed(2), ay: r.after.y.toFixed(2), wx: r.worst.x.ratio.toFixed(2), wy: r.worst.y.ratio.toFixed(2) });
+      rows.push({ name: name.slice(0, 28), S: r.S, ms: r.ms, bx: r.before.x.toFixed(2), by: r.before.y.toFixed(2), ax: r.after.x.toFixed(2), ay: r.after.y.toFixed(2), wx: r.worst.x.ratio.toFixed(2), wy: r.worst.y.ratio.toFixed(2), cx: r.cut.x.toFixed(2), cy: r.cut.y.toFixed(2) });
     } catch (e) { rows.push({ name: name.slice(0, 28), error: String(e).slice(0, 80) }); }
   }
   console.table(rows); if (errors.length) console.log("page errors/dialogs:", errors);

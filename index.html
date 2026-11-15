@@ -1,6 +1,6 @@
 <!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">
-<title>Seamcheck – free seamless texture tester (offline, in your browser)</title>
-<meta name=description content="Drop a PNG, JPG or SVG to test if it tiles seamlessly. Tiled preview, half-offset seam view and a numeric seam score. Runs entirely in your browser; nothing is uploaded.">
+<title>Seamcheck – test and make seamless textures, free, in your browser</title>
+<meta name=description content="Drop a PNG or JPG to test if it tiles seamlessly, then make it tileable with a sharp seam weld (image quilting, not blur). Tiled preview, seam score, before/after. Runs entirely in your browser; nothing is uploaded.">
 <link rel=canonical href="https://phoenixbycaselka.github.io/seamcheck/">
 <link rel=icon href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Crect width=%278%27 height=%2716%27 fill=%27%23e63%27/%3E%3Crect x=%278%27 width=%278%27 height=%2716%27 fill=%27%2336e%27/%3E%3Crect x=%277%27 width=%272%27 height=%2716%27 fill=%27%23ff2d6f%27/%3E%3C/svg%3E">
 <style>
@@ -31,10 +31,24 @@ small,footer{color:#9a93ad}footer{margin-top:26px}a{color:#c9b6ff}
 <div id=res hidden>
 <div class=views><div><h2>Tiled</h2><canvas id=a></canvas></div><div><h2>Offset by half a tile (seams move to the middle)</h2><canvas id=b></canvas></div></div>
 <div class=score id=sc></div>
-<p><button id=fix>Auto-fix seams (cross-blend) &amp; download PNG</button> <small id=fixn></small></p>
+<div class=score id=fixbox>
+<h2>Make it seamless</h2>
+<div class=row>
+<label><input type=radio name=meth value=weld checked> Weld (patch + min-cut, keeps pixels sharp)</label>
+<label><input type=radio name=meth value=blend> Cross-blend (old, soft)</label>
+<label>Weld width <input id=sw type=range min=16 max=256 value=64> <b id=swv>64px</b></label>
+</div>
+<p><button id=fix>Make seamless</button> <small id=fixn></small></p>
+<div id=wres hidden>
+<div class=views><div><h2>Result, tiled 2×2</h2><canvas id=resc></canvas></div><div><h2>Result, offset by half (old seams in the middle)</h2><canvas id=resb></canvas></div></div>
+<p id=wscore></p>
+<p><button id=dl>Download PNG</button> <button id=rechk>Re-check the result</button></p>
+</div>
+</div>
 </div>
 <footer>Free, MIT, runs offline in your browser – the image never leaves your device. Made by Wren, an AI agent. <a href="https://github.com/phoenixbycaselka/seamcheck">Source</a> · Need good tiles? <a href="https://phoenixbycaselka.github.io/tilekit/">TileKit</a>.</footer>
 </main>
+<script src=weld.js></script>
 <script>
 const $=id=>document.getElementById(id);let img=null;
 function load(src){const i=new Image();i.onload=()=>{img=i;run()};i.onerror=()=>alert("Could not read that image.");i.src=src}
@@ -56,16 +70,35 @@ function seam(d,w,h,horiz){ // wrap-edge diff vs the 90th percentile of all inte
  xs.sort((p,q)=>p-q);const p90=xs[Math.floor(xs.length*.9)],wrap=edge(d,w,h,L-1,0,horiz);
  return{wrap,ratio:wrap/Math.max(p90,1)}}
 
+function raster(){let w=img.naturalWidth||256,h=img.naturalHeight||256;if(w>1024||h>1024){const k=1024/Math.max(w,h);w=Math.round(w*k);h=Math.round(h*k)}
+ const t=document.createElement("canvas");t.width=w;t.height=h;const c=t.getContext("2d",{willReadFrequently:true});c.drawImage(img,0,0,w,h);return{t,c,w,h,d:c.getImageData(0,0,w,h).data}}
+function blend(d,W,Hh){ // old fixer: cross-fade the tile with its half-offset copy near the edges
+ const o=new Uint8ClampedArray(d.length),ox=W>>1,oy=Hh>>1,m=(i,L)=>{const u=1-Math.abs(2*i/(L-1)-1);return u*u*(3-2*u)};
+ for(let y=0;y<Hh;y++)for(let x=0;x<W;x++){const k=m(x,W)*m(y,Hh),p=(y*W+x)*4,q=(((y+oy)%Hh)*W+(x+ox)%W)*4;for(let j=0;j<4;j++)o[p+j]=d[p+j]*k+d[q+j]*(1-k)}return o}
+let outCanvas=null;
 function fixTile(){
- const w=img.naturalWidth||256,h=img.naturalHeight||256,W=Math.min(w,1024),Hh=Math.min(h,1024);
- const t=document.createElement("canvas");t.width=W;t.height=Hh;const c=t.getContext("2d",{willReadFrequently:true});c.drawImage(img,0,0,W,Hh);
- const s=c.getImageData(0,0,W,Hh),o=new ImageData(W,Hh),d=s.data,ox=W>>1,oy=Hh>>1;
- const m=(i,L)=>{const u=1-Math.abs(2*i/(L-1)-1);return u*u*(3-2*u)};
- for(let y=0;y<Hh;y++)for(let x=0;x<W;x++){const k=m(x,W)*m(y,Hh),p=(y*W+x)*4,q=(((y+oy)%Hh)*W+(x+ox)%W)*4;
-  for(let j=0;j<4;j++)o.data[p+j]=d[p+j]*k+d[q+j]*(1-k)}
- c.putImageData(o,0,0);const a=document.createElement("a");a.download="seamless.png";a.href=t.toDataURL("image/png");a.click();
- $("fixn").textContent="Blends the tile with its half-offset copy near the edges. Works well on organic textures (stone, sky, grass, noise); on regular patterns like bricks or tiles it blurs/misaligns the pattern, and there may be ghosting in the middle. Re-drop the result and look at it."}
+ const meth=document.querySelector("input[name=meth]:checked").value;
+ $("fixn").textContent=meth==="weld"?"Welding… (a second or two on big images)":"Blending…";$("fix").disabled=true;$("wres").hidden=true;
+ setTimeout(()=>{try{
+  const {t,c,w,h,d}=raster(),t0=Date.now();let out,r;
+  if(meth==="weld"){r=Weld.weld(d,w,h,+$("sw").value);out=r.out}
+  else{out=blend(d,w,h);const sr=(b,hz)=>Weld.seamRatio(b,w,h,hz).ratio;
+   r={before:{x:sr(d,true),y:sr(d,false)},after:{x:sr(out,true),y:sr(out,false)},worst:Weld.worstSeam(out,w,h),cut:{x:0,y:0},S:0,ms:Date.now()-t0}}
+  r.method=meth;const o=new ImageData(w,h);o.data.set(out);c.putImageData(o,0,0);outCanvas=t;
+  const rc=$("resc"),rb=$("resb");rc.width=rb.width=Math.min(w*2,1500);rc.height=rb.height=Math.min(h*2,1500);
+  for(const [cv,x0,y0] of [[rc,0,0],[rb,-(w>>1),-(h>>1)]]){const cc=cv.getContext("2d");cc.imageSmoothingEnabled=false;for(let y=-1;y<3;y++)for(let x=-1;x<3;x++)cc.drawImage(t,x0+x*w,y0+y*h)}
+  const f=v=>v.toFixed(2),aft=Math.max(r.after.x,r.after.y),wst=Math.max(r.worst.x.ratio,r.worst.y.ratio),cut=Math.max(r.cut.x,r.cut.y);
+  const verdict=aft>2||wst>3?`<span class=bad>The ${meth} could not hide the seam.</span> Usually a large-scale brightness gradient, vignette or perspective; try cropping an evenly lit part first.`
+   :cut>2?`<span class=meh>Edges match now, but the weld line itself is probably visible</span> (cut cost ${f(cut)}): the pattern runs in one direction (grain, stripes, perspective) so no patch lines up. Try a wider weld, or crop/rotate so the structure is less directional.`
+   :aft<=1.2&&wst<2.5?`<span class=ok>Seamless by Seamcheck's own score.</span>`:`<span class=meh>Better, but look closely at the offset view.</span>`;
+  $("wscore").innerHTML=`<span class=v>${verdict}</span><br>Seam score before → after: left↔right <b>${f(r.before.x)} → ${f(r.after.x)}</b>, top↔bottom <b>${f(r.before.y)} → ${f(r.after.y)}</b>. Worst edge anywhere in the result (interior cuts included): <b>${f(wst)}</b>. ${r.ms} ms${meth==="weld"?`, weld width ${r.S}px`:""}.`;
+  $("fixn").textContent=meth==="weld"?"Weld: finds the best-matching strip elsewhere in your image, lays it over each seam and cuts along the least visible path (image quilting). No blur, but on regular patterns (bricks) it can mis-register; try a different width.":"Blend: cross-fades the tile with its half-offset copy near the edges. Soft; may ghost in the middle.";
+  $("wres").hidden=false;window.__weld=r;
+ }catch(e){$("fixn").textContent="Failed: "+e.message;window.__weld={error:String(e)}}finally{$("fix").disabled=false}},30)}
 $("fix").onclick=()=>img&&fixTile();
+$("sw").oninput=()=>$("swv").textContent=$("sw").value+"px";
+$("dl").onclick=()=>{if(!outCanvas)return;const a=document.createElement("a");a.download="seamless.png";a.href=outCanvas.toDataURL("image/png");a.click()};
+$("rechk").onclick=()=>{if(!outCanvas)return;$("exnote").hidden=true;load(outCanvas.toDataURL("image/png"));scrollTo(0,0)};
 function run(){
  let w=img.naturalWidth||256,h=img.naturalHeight||256;
  if(w>1024||h>1024){const k=1024/Math.max(w,h);w=Math.round(w*k);h=Math.round(h*k)}
@@ -86,5 +119,5 @@ function run(){
  const cls=worst<1.2?"ok":worst<2.5?"meh":"bad",txt=worst<1.2?"Seamless":worst<2.5?"Slight seam – look closely":"Visible seam";
  const f=(x)=>x.ratio.toFixed(2);
  $("sc").innerHTML=`<div class="v ${cls}">${txt}</div><p>Image ${w}×${h}px. Seam score (≤1 = the wrap edge is no sharper than the busiest ordinary pixel edges; higher = worse):<br>Left↔right: <b>${f(H)}</b> · Top↔bottom: <b>${f(V)}</b><br><small>Seam lines: <span style="color:#ff2d6f">thick pink = visible</span>, <span style="color:#ffc94a">amber = slight</span>, faint white = fine. Slight/fine seams get edge ticks only so you can see the pixels.</small></p><small>How: compares the last pixel column/row with the first, relative to the 90th-percentile difference between adjacent columns/rows. Around 1 or less is usually invisible; over 2.5 is almost always visible. A heuristic, so always check the offset view with your own eyes.</small>`;
- $("res").hidden=false}
+ $("res").hidden=false;$("sw").value=Weld.defaultWidth(w,h);$("swv").textContent=$("sw").value+"px";$("wres").hidden=true;window.__loaded=true}
 </script>

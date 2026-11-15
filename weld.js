@@ -122,12 +122,24 @@
       }
     }
     const pL = minCutPath(cL, H, ov, true), pR = minCutPath(cR, H, ov, true);
+    let cutL = 0, cutR = 0;   // mean RGB diff per pixel along each cut: how visible the seam line is
+    for (let y = 0; y < H; y++) { cutL += Math.sqrt(cL[y * ov + pL[y]] / 3); cutR += Math.sqrt(cR[y * ov + pR[y]] / 3); }
     for (let y = 0; y < H; y++) {
       for (let j = ov; j < S - ov; j++) copy(y, j);                 // core: all patch
       for (let k = pL[y] + 1; k < ov; k++) copy(y, k);              // left zone: right of the cut is patch
       for (let k = 0; k < pR[y]; k++) copy(y, S - ov + k);          // right zone: left of the cut is patch
     }
-    return { out, cx, cost: bestCost, S };
+    return { out, cx, cost: bestCost, S, cut: Math.max(cutL, cutR) / H };
+  }
+
+  // Typical difference between horizontally adjacent pixels (mean abs RGB), sampled. Reference for cut cost.
+  function neighbourDiff(buf, W, H) {
+    let s = 0, n = 0;
+    for (let y = 0; y < H; y += 3) for (let x = 0; x < W - 1; x += 3) {
+      const p = (y * W + x) * 4, q = p + 4;
+      s += (Math.abs(buf[p] - buf[q]) + Math.abs(buf[p + 1] - buf[q + 1]) + Math.abs(buf[p + 2] - buf[q + 2])) / 3; n++;
+    }
+    return Math.max(s / n, 1);
   }
 
   // Full pipeline: shift half, vertical pass, transpose + vertical pass + transpose back, shift back.
@@ -138,12 +150,15 @@
     const before = { x: seamRatio(buf, W, H, true).ratio, y: seamRatio(buf, W, H, false).ratio };
     const dx = W >> 1, dy = H >> 1;
     const O = shift(buf, W, H, dx, dy);                 // seams now at column dx and row dy
+    const ref = neighbourDiff(O, W, H);
     const v = weldVertical(O, W, H, S, dx);
     const T = transpose(v.out, W, H);                   // H wide, W tall; former row seam is now column dy
     const hz = weldVertical(T, H, W, S, dy);
+    const refT = neighbourDiff(T, H, W);
     const out = shift(transpose(hz.out, H, W), W, H, -dx, -dy);
     const after = { x: seamRatio(out, W, H, true).ratio, y: seamRatio(out, W, H, false).ratio };
-    return { out, before, after, worst: worstSeam(out, W, H), S, ms: Date.now() - t0, cx: v.cx, cy: hz.cx };
+    return { out, before, after, worst: worstSeam(out, W, H), S, ms: Date.now() - t0, cx: v.cx, cy: hz.cx,
+      cut: { x: v.cut / ref, y: hz.cut / refT } };   // >~2: the weld line itself is probably visible
   }
 
   function defaultWidth(W, H) { return Math.max(24, Math.min(160, Math.round(Math.min(W, H) / 6))); }
