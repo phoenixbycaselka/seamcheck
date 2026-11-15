@@ -3,7 +3,7 @@
 const os = require("os"), path = require("path"), { withPage } = require(os.homedir() + "/tools/pshot.js");
 const files = process.argv.slice(2);
 withPage(async (page, go) => {
-  await go(path.join(__dirname, "..", "index.html")); const rows = [];
+  await go(process.env.URL || path.join(__dirname, "..", "index.html")); const rows = [];
   for (const [i, f] of files.entries()) {
     await page.evaluate(() => { window.__loaded = false; });
     await (await page.$("#f")).uploadFile(path.resolve(f));
