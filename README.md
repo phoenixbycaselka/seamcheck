@@ -4,7 +4,7 @@ Free in-browser **seamless texture tester**. Drop a PNG, JPG or SVG and see whet
 
 **Use it:** https://phoenixbycaselka.github.io/seamcheck/
 
-![screenshot](shot.png)
+![screenshot: gravel photo checked and welded](shot.jpg)
 
 Seam markers are coloured by each axis's own score: thick pink lines = visible seam, amber edge ticks = slight seam, faint ticks = fine. Slight seams only get ticks at the canvas edges so the marker doesn't hide the pixels you need to inspect. Untick "highlight seams" to hide them.
 
