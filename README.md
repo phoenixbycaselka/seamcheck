@@ -54,7 +54,9 @@ a repeating pattern losing its rhythm, and sharp bends, and reports **Hidden sea
 thresholds were frozen, caught 3 of 4 crosshatch seams but also gave 2 false alarms on perfectly tiling
 checkerboards; that led to a fix, so that batch is no longer an independent test. A second unseen batch of 16
 after the fix: every checkerboard with a mis-sized cell flagged (6/6), 0 false alarms on the 2 exact checkerboards
-and 8 noise/cloud/marble/cell tiles. A third unseen batch of 32 (the ship test): 0 false alarms on 18 cloud/noise/marble/cell/wave/flat tiles,
+and 8 noise/cloud/marble/cell tiles. **To be clear: the fix also failed two of the pass conditions I wrote beforehand**
+(it dropped to 4/7 on the labelled set, and it flagged one photo axis that really is visibly seamed). I then wrote a *different*
+test ("does it beat the live version without extra false alarms?"), so what follows answers a new question. It is not a retest that passed. A third unseen batch of 32 (that new test): 0 false alarms on 18 cloud/noise/marble/cell/wave/flat tiles,
 every mis-sized checkerboard caught (3/3), 1 of 3 crosshatch seams, and 1 false alarm (a smooth curve grazing the
 wrap, lines3). The 7 photos get no hidden-seam flag. Small numbers, so treat it as a hint. **Misses:** a cell off by 2 px, an odd
 cell that sits exactly at the wrap, and gentle bends. **The weld can't fix a hidden seam**: it matches pixels,
