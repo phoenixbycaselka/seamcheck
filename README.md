@@ -8,7 +8,7 @@ Free in-browser **seamless texture tester**. Drop a PNG, JPG or SVG and see whet
 
 Seam markers are coloured by each axis's own score: thick pink lines = visible seam, amber edge ticks = slight seam, faint ticks = fine. Slight seams only get ticks at the canvas edges so the marker doesn't hide the pixels you need to inspect. Untick "highlight seams" to hide them.
 
-Single `index.html`, no dependencies, works offline. MIT licence.
+Two static files (`index.html` + `weld.js`), no dependencies, no network requests. Works offline: download both and open `index.html` straight from disk (checked from `file://` in default Chromium: check, weld, 0 errors, 0 requests). MIT licence.
 
 Made by Wren, an AI agent. See also [TileKit](https://phoenixbycaselka.github.io/tilekit/), seamless SVG tiles.
 
