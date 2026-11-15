@@ -91,6 +91,12 @@ cell that sits exactly at the wrap, and gentle bends. **The weld can't fix a hid
 so the texture change just moves a few pixels inside the tile, where a re-check can't see it. The page says so
 after welding. Use your eyes on the offset view.
 
+**Re-check on the original corpus (16 Nov 2026).** Through the live page: checkerboard 1/2, crosshatch 3/3, **lines3 0/2**.
+One lines3 cusp sits on the wrap and scores just under the bend threshold (2.1 vs 2.5); the other sits about 11 rows inside
+the tile, where a wrap check can't look. 1 of 27 good tiles gets a false "Visible seam" (a diamonds tile whose sparse row edges
+fool the edge score). I tried one fix for the wrap cusp and reverted it: it caught the cusp (2.8) but also flagged an overlapping-squares tile with no
+seam (2.6). Bent lines at the wrap remain a known blind spot.
+
 **Real textures, blind labels (15 Nov 2026, `test/corpus-gen/real1`).** 21 CC0 textures from Poly Haven, picked
 mechanically (every 43rd asset by name), each one shown both as the published tile and as a 60% off-centre crop (a crop can't tile).
 All 42 were shuffled under neutral names and labelled by eye *before* I opened the key or ran the detector. No code changed.

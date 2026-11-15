@@ -90,6 +90,11 @@ if (typeof W.structure !== "function") { fails++; console.log("FAIL structure() 
   for (const hz of [true, false]) check("structure: exact 32px checkerboard" + (hz ? " x" : " y") + " not flagged", !W.structure(n4, 256, 64, hz).kind, JSON.stringify(W.structure(n4, 256, 64, hz)));
   for (const [nm, d, w, h] of [["tiling stripes", n1, 64, 40], ["flat", n2, 64, 64], ["periodic waves", n3, 128, 64]])
     for (const hz of [true, false]) check("structure: " + nm + (hz ? " x" : " y") + " not flagged", !W.structure(d, w, h, hz).kind, JSON.stringify(W.structure(d, w, h, hz)));
+  // F118: real tgen lines3 (seed3, 5 waves): the band's slope flips sign at the x wrap (a visible cusp), edges match.
+  { const im = require(require("os").homedir() + "/tools/png.js").read(__dirname + "/corpus-gen/png/bad-lines3-seed3-waves5.png");
+    const r = W.structure(im.data, im.w, im.h, true);   // KNOWN MISS (F118): kink 2.09 < 2.5; a fix that caught it also
+    // false-flagged an overlapping-squares tile (holdout4) at 2.57, so it was reverted. Reported, not counted as a failure.
+    console.log((r.kind ? "ok   " : "MISS ") + "structure: tgen lines3 waves5 cusp at x wrap flagged (known miss) " + r.kink.toFixed(2)); }
 }
 
 console.log(fails ? "\n" + fails + " FAILED" : "\nall passed");
