@@ -48,6 +48,9 @@ a held-out set of 31 (highest good: 1.43, 7 of 9 bad caught) and the generated s
 Then I rolled the test photos so their wraps sit in the middle, and grunge (yellow wall above, grey wall below), sandstone and grass
 showed glaring seams while rated "Slight". Now a blurred score of 1.8 or more rates that wrap "Visible". In both real sets,
 all 7 tiles at 1.8 or above are off-centre crops (not tileable by construction) and I can see the seam in each one. The highest published tile scores 1.63.
+**Holdout check (16 Nov 2026):** 25 more published Poly Haven tiles that played no part in setting 1.8 (`test/corpus-gen/real3/`):
+none reached 1.8 (highest 1.60), so no false "Visible". But 2 of 25 scored over 1.5 and would get a false "Slight" (wood veneer
+1.60, grey floor tiles 1.57; both look seamless to me). So on photos, treat a tone-shift "Slight" as "look for yourself", not as a fault.
 `node test/expect.js` checks all 7 test photos' verdicts against what I see (3 failed before the change, 7 pass after).
 Welding only softens a tone shift (worst axis: grass 2.07 → 1.94, grunge 2.57 → 2.00), so "Re-check the result" will still flag those.
 
