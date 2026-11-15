@@ -43,21 +43,108 @@
   // toroidal=true: additionally require |path[rows-1]-path[0]|<=1 (tile wraps vertically). Exact: run the DP
   // once per start column and keep the cheapest path satisfying the end constraint.
   function minCutPath(cost, rows, cols, toroidal) {
-    throw new Error("TODO minCutPath");
+    const path = new Int16Array(rows);
+    if (cols <= 1 || rows === 0) return path;
+    const D = new Float64Array(rows * cols), from = new Int16Array(rows * cols);
+    function run(k0) { // k0 = -1: free start
+      for (let k = 0; k < cols; k++) D[k] = (k0 < 0 || k === k0) ? cost[k] : Infinity;
+      for (let r = 1; r < rows; r++) {
+        const pr = (r - 1) * cols, cr = r * cols;
+        for (let k = 0; k < cols; k++) {
+          let best = D[pr + k], bk = k;
+          if (k > 0 && D[pr + k - 1] < best) { best = D[pr + k - 1]; bk = k - 1; }
+          if (k < cols - 1 && D[pr + k + 1] < best) { best = D[pr + k + 1]; bk = k + 1; }
+          D[cr + k] = best + cost[cr + k]; from[cr + k] = bk;
+        }
+      }
+      const lr = (rows - 1) * cols; let best = Infinity, bk = 0;
+      for (let k = 0; k < cols; k++) {
+        if (k0 >= 0 && Math.abs(k - k0) > 1) continue;
+        if (D[lr + k] < best) { best = D[lr + k]; bk = k; }
+      }
+      return { cost: best, end: bk };
+    }
+    function backtrack(end) { let k = end; for (let r = rows - 1; r >= 0; r--) { path[r] = k; if (r > 0) k = from[r * cols + k]; } }
+    if (!toroidal || rows === 1) { backtrack(run(-1).end); return path; }
+    let bestCost = Infinity, bestK0 = 0, bestEnd = 0;
+    for (let k0 = 0; k0 < cols; k0++) { const r = run(k0); if (r.cost < bestCost) { bestCost = r.cost; bestK0 = k0; bestEnd = r.end; } }
+    run(bestK0); backtrack(bestEnd);
+    return path;
   }
 
-  function transpose(buf, W, H) { throw new Error("TODO transpose"); }   // -> buffer of size H x W
-  function shift(buf, W, H, dx, dy) { throw new Error("TODO shift"); }   // out[x,y] = in[(x-dx) mod W, (y-dy) mod H]
+  function px32(buf, n) { return new Uint32Array(buf.buffer, buf.byteOffset, n); }
+  function transpose(buf, W, H) {   // -> buffer of size H x W (width H, height W)
+    const out = new Uint8ClampedArray(W * H * 4), a = px32(buf, W * H), b = px32(out, W * H);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) b[x * H + y] = a[y * W + x];
+    return out;
+  }
+  function shift(buf, W, H, dx, dy) {   // out[x,y] = in[(x-dx) mod W, (y-dy) mod H]
+    const out = new Uint8ClampedArray(W * H * 4), a = px32(buf, W * H), b = px32(out, W * H);
+    dx = ((dx % W) + W) % W; dy = ((dy % H) + H) % H;
+    for (let y = 0; y < H; y++) { const sy = (y - dy + H) % H; for (let x = 0; x < W; x++) b[y * W + x] = a[sy * W + (x - dx + W) % W]; }
+    return out;
+  }
 
   // Repair the vertical seam between columns seamX-1 and seamX using a strip S wide (ov = floor(S/3)).
   // Candidate patches: column windows [cx, cx+S) mod W of buf itself that do not contain the boundary
   // seamX-1|seamX. Best candidate by SSD in both overlap zones; min-cut (toroidal rows) in each zone.
-  // Returns { out, cx, cost } ; out is a new buffer.
-  function weldVertical(buf, W, H, S, seamX) { throw new Error("TODO weldVertical"); }
+  // Returns { out, cx, cost, S } ; out is a new buffer.
+  function weldVertical(buf, W, H, S, seamX) {
+    S = Math.min(S, 2 * Math.min(seamX, W - seamX), W - 2);
+    if (S < 6) return { out: buf.slice(), cx: -1, cost: Infinity, S };
+    const ov = Math.floor(S / 3), x0 = seamX - (S >> 1);
+    const cstep = W > 512 ? 2 : 1, rstep = H > 256 ? 2 : 1;
+    let bestCx = -1, bestCost = Infinity;
+    for (let cx = 0; cx < W; cx += cstep) {
+      if (((seamX - 1 - cx + W) % W) < S - 1) continue;   // window would contain the seam boundary
+      let c = 0;
+      for (let y = 0; y < H && c < bestCost; y += rstep) {
+        const row = y * W;
+        for (let j = 0; j < S; j++) {
+          if (j === ov) j = S - ov;                          // skip the core: overlaps only
+          const p = (row + x0 + j) * 4, q = (row + (cx + j) % W) * 4;
+          const dr = buf[p] - buf[q], dg = buf[p + 1] - buf[q + 1], db = buf[p + 2] - buf[q + 2];
+          c += dr * dr + dg * dg + db * db;
+        }
+      }
+      if (c < bestCost) { bestCost = c; bestCx = cx; }
+    }
+    if (bestCx < 0) return { out: buf.slice(), cx: -1, cost: Infinity, S };
+    const out = buf.slice(), cx = bestCx;
+    const copy = (y, j) => { const p = (y * W + x0 + j) * 4, q = (y * W + (cx + j) % W) * 4; out[p] = buf[q]; out[p + 1] = buf[q + 1]; out[p + 2] = buf[q + 2]; out[p + 3] = buf[q + 3]; };
+    // overlap costs: per-pixel SSD between what is there and what the patch would put there
+    const cL = new Float32Array(H * ov), cR = new Float32Array(H * ov);
+    for (let y = 0; y < H; y++) for (let k = 0; k < ov; k++) {
+      for (const [arr, j] of [[cL, k], [cR, S - ov + k]]) {
+        const p = (y * W + x0 + j) * 4, q = (y * W + (cx + j) % W) * 4;
+        const dr = buf[p] - buf[q], dg = buf[p + 1] - buf[q + 1], db = buf[p + 2] - buf[q + 2];
+        arr[y * ov + k] = dr * dr + dg * dg + db * db;
+      }
+    }
+    const pL = minCutPath(cL, H, ov, true), pR = minCutPath(cR, H, ov, true);
+    for (let y = 0; y < H; y++) {
+      for (let j = ov; j < S - ov; j++) copy(y, j);                 // core: all patch
+      for (let k = pL[y] + 1; k < ov; k++) copy(y, k);              // left zone: right of the cut is patch
+      for (let k = 0; k < pR[y]; k++) copy(y, S - ov + k);          // right zone: left of the cut is patch
+    }
+    return { out, cx, cost: bestCost, S };
+  }
 
   // Full pipeline: shift half, vertical pass, transpose + vertical pass + transpose back, shift back.
   // Returns { out, before:{x,y}, after:{x,y}, worst:{x,y}, S, ms }
-  function weld(buf, W, H, S) { throw new Error("TODO weld"); }
+  function weld(buf, W, H, S) {
+    const t0 = Date.now();
+    S = Math.max(6, Math.min(S | 0, Math.floor(Math.min(W, H) / 2)));
+    const before = { x: seamRatio(buf, W, H, true).ratio, y: seamRatio(buf, W, H, false).ratio };
+    const dx = W >> 1, dy = H >> 1;
+    const O = shift(buf, W, H, dx, dy);                 // seams now at column dx and row dy
+    const v = weldVertical(O, W, H, S, dx);
+    const T = transpose(v.out, W, H);                   // H wide, W tall; former row seam is now column dy
+    const hz = weldVertical(T, H, W, S, dy);
+    const out = shift(transpose(hz.out, H, W), W, H, -dx, -dy);
+    const after = { x: seamRatio(out, W, H, true).ratio, y: seamRatio(out, W, H, false).ratio };
+    return { out, before, after, worst: worstSeam(out, W, H), S, ms: Date.now() - t0, cx: v.cx, cy: hz.cx };
+  }
 
   function defaultWidth(W, H) { return Math.max(24, Math.min(160, Math.round(Math.min(W, H) / 6))); }
 
