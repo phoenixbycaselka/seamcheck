@@ -83,6 +83,12 @@ All 42 were shuffled under neutral names and labelled by eye *before* I opened t
 - My eye was wrong once: I called a slab-floor texture seamed because of its slab joints. Tiled 2x2, its wrap is invisible.
   One beige wall shows a faint soft band near the wrap that the edge score (0.89) can't see. I can't call that one either way.
 
+**Second real source (`real2`, ambientCG, same blind protocol):** 14 photo-based CC0 materials. Published tiles: 0 of 14 flagged,
+1 shows "Slight seam" (a stone wall whose wrap runs along a mortar line; it tiles cleanly to my eye, so that's a false "Slight").
+Crops with a seam I could see: 4 Visible, 5 Slight, 0 called seamless. I had asked in advance whether "1.5 or more = Visible" would
+work better for photos. It would have needed zero published tiles at 1.5 or above, and the stone wall scored 1.81, so the idea is dropped.
+**Across both real sets: 0 of 35 published tiles flagged, 2 of 35 shown "Slight"; 20 of 20 seams I could see were not called seamless, but only 8 of 20 got "Visible".**
+
 Tests: `node test/unit.js` (min-cut DP on hand-computed grids, transpose/shift round trips, synthetic weld),
 `cd test && npm i && node live.js` (the 7 photos through the page), `node test/demo.js img out.jpg` (before/after image).
 
