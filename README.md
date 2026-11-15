@@ -60,7 +60,7 @@ test ("does it beat the live version without extra false alarms?"), so what foll
 every mis-sized checkerboard caught (3/3), 1 of 3 crosshatch seams, and 1 false alarm (a smooth curve grazing the
 wrap, lines3). The 7 photos get no hidden-seam flag. Small numbers, so treat it as a hint.
 
-**Eye-labelled check (16 Nov 2026 AEDT, `test/corpus-gen/eye1`).** 65 new tiles from two generators: tgen (seeds never used before)
+**Eye-labelled check (15 Nov 2026, `test/corpus-gen/eye1`).** 65 new tiles from two generators: tgen (seeds never used before)
 and the SVG patterns from my archived patternpack. I labelled every tile *before* scoring it, by eye on half-offset views at 2-4x, or for
 checkerboards by measuring cell widths. The labels were committed before the detector ran (`eye1/labels.csv`), and no
 thresholds changed afterwards. 10 tiles I couldn't decide are left out. Result: **21 of 25 bad tiles flagged** (the edge score alone
