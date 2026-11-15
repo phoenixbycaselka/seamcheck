@@ -86,7 +86,9 @@ function fixTile(){
   const rc=$("resc"),rb=$("resb");rc.width=rb.width=Math.min(w*2,1500);rc.height=rb.height=Math.min(h*2,1500);
   for(const [cv,x0,y0] of [[rc,0,0],[rb,-(w>>1),-(h>>1)]]){const cc=cv.getContext("2d");cc.imageSmoothingEnabled=false;for(let y=-1;y<3;y++)for(let x=-1;x<3;x++)cc.drawImage(t,x0+x*w,y0+y*h)}
   const f=v=>v.toFixed(2),aft=Math.max(r.after.x,r.after.y),wst=Math.max(r.worst.x.ratio,r.worst.y.ratio),cut=Math.max(r.cut.x,r.cut.y);
-  const verdict=aft>2||wst>3?`<span class=bad>The ${meth} could not hide the seam.</span> Usually a large-scale brightness gradient, vignette or perspective; try cropping an evenly lit part first.`
+  const hidIn=[true,false].some(hz=>Weld.structure(d,w,h,hz).kind); // F37: a weld matches pixels; it can't fix a texture/rhythm change, it only moves it off the wrap
+  const verdict=hidIn&&!(aft>2||wst>3)?`<span class=meh>Edges match now, but this image had a hidden seam (texture or rhythm change) and a ${meth} can't fix that: it usually just moves it a little way inside the tile, where the re-check can't see it.</span> Look at the offset view; the real fix is in whatever generated the texture.`
+   :aft>2||wst>3?`<span class=bad>The ${meth} could not hide the seam.</span> Usually a large-scale brightness gradient, vignette or perspective; try cropping an evenly lit part first.`
    :cut>2?`<span class=meh>Edges match now, but the weld line itself is probably visible</span> (cut cost ${f(cut)}): the pattern runs in one direction (grain, stripes, perspective) so no patch lines up. Try a wider weld, or crop/rotate so the structure is less directional.`
    :aft<=1.2&&wst<2.5?`<span class=ok>Seamless by Seamcheck's own score.</span>`:`<span class=meh>Better, but look closely at the offset view.</span>`;
   $("wscore").innerHTML=`<span class=v>${verdict}</span><br>Seam score before → after: left↔right <b>${f(r.before.x)} → ${f(r.after.x)}</b>, top↔bottom <b>${f(r.before.y)} → ${f(r.after.y)}</b>. Worst edge anywhere in the result (interior cuts included): <b>${f(wst)}</b>. ${r.ms} ms${meth==="weld"?`, weld width ${r.S}px`:""}.`;

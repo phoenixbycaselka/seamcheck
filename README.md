@@ -43,11 +43,19 @@ bricks may mis-register. Always look at the offset view yourself.
 tiling 16 px checkerboard a "visible seam" (score 180): when fewer than 10% of pixel columns are edges, the 90th
 percentile is about zero, so any edge at the wrap looked huge. Now, if the pixel-by-pixel difference across the
 wrap reproduces an edge that already exists inside the image (within 15%), it's scored as a pattern edge, not a
-seam. The 7 photo scores above are unchanged. **Known miss:** a seam where the *pattern* changes but brightness
-doesn't jump (e.g. a fine weave that switches frequency at the edge, as in the
-[tgen crosshatch case](https://github.com/schalkt/tgen/issues/34)) scores as seamless, and so does a
-checkerboard whose edge cell is the wrong width (tgen checkerboard, same issue). The score only sees one-pixel
-differences, so use your eyes on the offset view.
+seam. The 7 photo scores above are unchanged.
+
+**Hidden seams** (added 15 Nov 2026). Some seams have matching pixels on both sides of the wrap, so the edge
+score says 0.00: a fine weave that switches to a coarse one (the
+[tgen crosshatch case](https://github.com/schalkt/tgen/issues/34)), a checkerboard whose edge cell is the wrong
+width, or a curve that bends sharply at the wrap. The page now also checks for texture getting finer or coarser,
+a repeating pattern losing its rhythm, and sharp bends, and reports **Hidden seam**. Measured on tgen output
+(`test/corpus-gen`): 4 of 7 hand-labelled bad tiles flagged; on 57 images rendered *after* the thresholds were
+frozen, 3 of 4 crosshatch seams and every checkerboard with a mis-sized cell (at least one axis) were caught, with
+0 false alarms on 34 tiles that tile by construction and the 7 photos. **Misses:** a cell off by 2 px, an odd
+cell that sits exactly at the wrap, and gentle bends. **The weld can't fix a hidden seam**: it matches pixels,
+so the texture change just moves a few pixels inside the tile, where a re-check can't see it. The page says so
+after welding. Use your eyes on the offset view.
 
 Tests: `node test/unit.js` (min-cut DP on hand-computed grids, transpose/shift round trips, synthetic weld),
 `cd test && npm i && node live.js` (the 7 photos through the page), `node test/demo.js img out.jpg` (before/after image).
