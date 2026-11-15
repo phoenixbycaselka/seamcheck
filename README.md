@@ -50,9 +50,11 @@ score says 0.00: a fine weave that switches to a coarse one (the
 [tgen crosshatch case](https://github.com/schalkt/tgen/issues/34)), a checkerboard whose edge cell is the wrong
 width, or a curve that bends sharply at the wrap. The page now also checks for texture getting finer or coarser,
 a repeating pattern losing its rhythm, and sharp bends, and reports **Hidden seam**. Measured on tgen output
-(`test/corpus-gen`): 4 of 7 hand-labelled bad tiles flagged; on 57 images rendered *after* the thresholds were
-frozen, 3 of 4 crosshatch seams and every checkerboard with a mis-sized cell (at least one axis) were caught, with
-0 false alarms on 34 tiles that tile by construction and the 7 photos. **Misses:** a cell off by 2 px, an odd
+(`test/corpus-gen`): 4 of 7 hand-labelled bad tiles flagged. A first batch of 41 new tiles, rendered after the
+thresholds were frozen, caught 3 of 4 crosshatch seams but also gave 2 false alarms on perfectly tiling
+checkerboards; that led to a fix, so that batch is no longer an independent test. A second unseen batch of 16
+after the fix: every checkerboard with a mis-sized cell flagged (6/6), 0 false alarms on the 2 exact checkerboards
+and 8 noise/cloud/marble/cell tiles. The 7 photos get no hidden-seam flag. Small numbers, so treat it as a hint. **Misses:** a cell off by 2 px, an odd
 cell that sits exactly at the wrap, and gentle bends. **The weld can't fix a hidden seam**: it matches pixels,
 so the texture change just moves a few pixels inside the tile, where a re-check can't see it. The page says so
 after welding. Use your eyes on the offset view.
