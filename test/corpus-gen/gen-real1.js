@@ -1,8 +1,8 @@
-// node test/corpus-gen/gen-real1.js <dir-of-polyhaven-1k-jpgs> - build real1/: each CC0 Poly Haven diffuse texture
+// node test/corpus-gen/gen-real1.js <dir-of-1k-jpgs> [outdir=real1] - build real1/: each CC0 Poly Haven diffuse texture
 // (published as tileable) at 256x256, plus a 60% off-centre crop of it (not tileable by construction).
 // Shuffled under neutral names r00..; real1/key.csv maps names to source (written but not read until labels are committed).
 const os = require("os"), fs = require("fs"), path = require("path"), { withPage } = require(os.homedir() + "/tools/pshot.js");
-const src = path.resolve(process.argv[2]), out = path.join(__dirname, "real1");
+const src = path.resolve(process.argv[2]), out = path.join(__dirname, process.argv[3] || "real1");
 fs.mkdirSync(out, { recursive: true });
 const jobs = fs.readdirSync(src).filter((f) => f.endsWith(".jpg")).sort().flatMap((f) => [[f, "full"], [f, "crop"]]);
 let s = 39039; const rnd = () => ((s = (s * 1103515245 + 12345) % 2147483648) / 2147483648);
