@@ -1,0 +1,45 @@
+file,label,axes,how
+h-cells-seed31337.png,good,,eye 2x
+h-cells-seed9001.png,good,,eye 2x
+h-checkerboard-seed141421.png,bad,xy,measured runs (x one 22 among 18; y one 41 among 43)
+h-checkerboard-seed271828.png,bad,x,measured runs (x one 13 among 9; y exact 8)
+h-checkerboard-seed31337.png,good,,measured runs (64 exact both)
+h-checkerboard-seed60606.png,bad,y,measured runs (x exact 16; y one 18 among 14)
+h-checkerboard-seed777.png,bad,xy,measured runs (x 22 among 26; y 25 among 21)
+h-checkerboard-seed9001.png,bad,xy,measured runs (x 9 among 13; y 41 among 43)
+h-clouds-seed31337.png,good,,eye 2x
+h-clouds-seed9001.png,good,,eye 2x
+h-crosshatch-seed141421.png,bad,y,eye 4x (fine lines above wrap / coarse below)
+h-crosshatch-seed271828.png,bad,xy,eye 2x (obvious)
+h-crosshatch-seed31337.png,bad,xy,eye 2x (obvious)
+h-crosshatch-seed60606.png,?,,eye 4x: maybe y change; not sure
+h-crosshatch-seed777.png,?,,eye 4x: change near but not at x wrap
+h-crosshatch-seed9001.png,bad,x,eye 4x (fine vertical lines left / smooth right)
+h-lines3-seed31337-waves1.png,bad,x,eye 4x (sharp spike exactly on x wrap; other peaks rounded)
+h-lines3-seed31337-waves2.png,good,,eye 4x
+h-lines3-seed31337-waves3.png,bad,x,eye 4x (spike on x wrap)
+h-lines3-seed31337-waves4.png,good,,eye 4x
+h-lines3-seed31337-waves5.png,bad,x,eye 4x (spike on x wrap)
+h-lines3-seed777-waves1.png,good,,eye 4x
+h-lines3-seed777-waves2.png,?,,hard horizontal line ~10px from y wrap (internal, not on wrap)
+h-lines3-seed777-waves3.png,?,,soft band near y wrap; can't decide
+h-lines3-seed777-waves4.png,?,,hard line ~10px from y wrap (internal)
+h-lines3-seed777-waves5.png,?,,hard line ~10px from y wrap (internal)
+h-pp-confetti-dusk.png,good,,eye 2x
+h-pp-confetti-earth.png,good,,eye 2x
+h-pp-diamonds-dusk.png,good,,eye 2x
+h-pp-diamonds-earth.png,good,,eye 2x
+h-pp-dots-dusk.png,good,,eye 2x
+h-pp-dots-earth.png,good,,eye 2x
+h-pp-grid-dusk.png,good,,eye 2x (archive README says grid breaks at 100px; at 256 raster no visible break)
+h-pp-grid-earth.png,good,,eye 2x
+h-pp-hex-dusk.png,?,,colour switches at an x-wrap vertex; may be by design
+h-pp-hex-earth.png,?,,colour per segment; can't tell
+h-pp-scales-dusk.png,bad,xy,eye 2x (colours swap at x wrap; dark band at y wrap)
+h-pp-scales-earth.png,bad,xy,eye 2x
+h-pp-stripes-dusk.png,good,,eye 2x
+h-pp-stripes-earth.png,good,,eye 2x
+h-pp-waves-dusk.png,bad,x,eye 2x (wave jumps at x wrap)
+h-pp-waves-earth.png,bad,x,eye 2x
+h-squares-seed31337.png,good,,eye 2x
+h-squares-seed9001.png,good,,eye 2x (faint boundary off the wrap)
