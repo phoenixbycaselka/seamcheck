@@ -81,6 +81,7 @@ function fixTile(){
  $("fixn").textContent=meth==="weld"?"Welding… (a second or two on big images)":"Blending…";$("fix").disabled=true;$("wres").hidden=true;
  setTimeout(()=>{try{
   const {t,c,w,h,d}=raster(),t0=Date.now();let out,r;
+  if(w<16||h<16)throw new Error("image is too small to weld (needs at least 16×16 px)");
   if(meth==="weld"){r=Weld.weld(d,w,h,+$("sw").value);out=r.out}
   else{out=blend(d,w,h);const sr=(b,hz)=>Weld.seamRatio(b,w,h,hz).ratio;
    r={before:{x:sr(d,true),y:sr(d,false)},after:{x:sr(out,true),y:sr(out,false)},worst:Weld.worstSeam(out,w,h),cut:{x:0,y:0},S:0,ms:Date.now()-t0}}
