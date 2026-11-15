@@ -17,7 +17,7 @@ label{display:flex;gap:6px;align-items:center}
 canvas{width:100%;background:#000;border-radius:8px;image-rendering:pixelated;display:block}
 h2{font-size:14px;margin:6px 0;color:#c9b6ff;font-weight:600}
 .score{padding:14px;border-radius:10px;background:#201b2d;margin-top:16px}
-.v{font-size:20px;font-weight:700}.ok{color:#7fe3a0}.meh{color:#ffd166}.bad{color:#ff7b7b}
+.v{font-size:20px;font-weight:700}#quick{margin:0 0 12px;padding:8px 14px;border-radius:10px;background:#201b2d}#quick b{font-size:18px}.ok{color:#7fe3a0}.meh{color:#ffd166}.bad{color:#ff7b7b}
 small,footer{color:#9a93ad}footer{margin-top:26px}a{color:#c9b6ff}.tip{color:#ffe7a8}summary{cursor:pointer;color:#c9b6ff;font-size:14px}
 </style>
 <main>
@@ -30,6 +30,7 @@ small,footer{color:#9a93ad}footer{margin-top:26px}a{color:#c9b6ff}.tip{color:#ff
 <a href="#" id=ex>try a bad example</a>
 </div>
 <div id=res hidden>
+<p id=quick></p>
 <div class=views><div><h2>Tiled</h2><canvas id=a></canvas></div><div><h2>Offset by half a tile (seams move to the middle)</h2><canvas id=b></canvas></div></div>
 <div class=score id=sc></div>
 <div class=score id=zm hidden></div>
@@ -138,6 +139,8 @@ const ew=Math.max(H.ratio,V.ratio);H.e=H.ratio;V.e=V.ratio;
  const cls=worst<1.2?"ok":worst<2.5?"meh":"bad",txt=hid.length&&ew<2.5?"Hidden seam":worst<1.2?"Seamless":worst<2.5?"Slight seam – look closely":"Visible seam";
  const f=(x,S)=>x.e.toFixed(2)+(S.kind&&x.e<2.5?" (edges match; hidden seam)":"");
  $("sc").innerHTML=`<div class="v ${cls}">${txt}</div>${cls==="meh"&&!hid.length?`<p class=tip>On photo textures this band is often a real seam (12 of 20 seams I could see in a blind test landed here). Look at the close-up below.</p>`:""}${hid.length?`<p class=hid>The pixels on either side of the wrap may match, but ${hid.join("; ")}. See the close-up below.</p>`:""}<p>Image ${w}×${h}px. Edge score (≤1 = the wrap edge is no sharper than the busiest ordinary pixel edges; higher = worse):<br>Left↔right: <b>${f(H,SH)}</b> · Top↔bottom: <b>${f(V,SV)}</b><br><small>Seam lines: <span style="color:#ff2d6f">thick pink = visible</span>, <span style="color:#ffc94a">amber = slight</span>, faint white = fine. Slight/fine seams get edge ticks only so you can see the pixels.</small></p><details><summary>How the score works</summary><small>Compares the last pixel column/row with the first, relative to the 90th-percentile difference between adjacent columns/rows (if the wrap reproduces an edge already inside the image, like a checkerboard cell edge, only the leftover mismatch counts). Around 1 or less is usually invisible; over 2.5 is almost always visible. In between ("Slight") is often a real seam on photo textures: in a blind test on 35 real CC0 textures, 12 of 20 seams I could see scored 1.6–2.5, while published seamless tiles scored under 1.2 (2 exceptions, both under 1.9). It also looks for seams whose edge pixels match: the texture getting finer or coarser at the wrap, a repeating pattern losing its rhythm, or shapes that bend instead of continuing ("Hidden seam"). A heuristic, so always check the offset view with your own eyes.</small></details>`;
+ const ax=(n,x,S)=>`${n} ${x.e.toFixed(2)}${S.kind&&x.e<2.5?" (hidden seam)":""}`;
+ $("quick").innerHTML=`<b class=${cls}>${txt}</b> · ${ax("left↔right",H,SH)} · ${ax("top↔bottom",V,SV)} <small>(≤1.2 seamless, ≥2.5 visible) · <a href="#sc">details</a></small>`;
  zoom(t,d,w,h,[["Left↔right",H],["Top↔bottom",V]].filter(([,x])=>x.ratio>=1.2));
  $("res").hidden=false;$("sw").value=Weld.defaultWidth(w,h);$("swv").textContent=$("sw").value+"px";$("wres").hidden=true;window.__loaded=true}
 </script>
