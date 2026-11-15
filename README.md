@@ -44,8 +44,12 @@ the wrap is obvious: the fine blades match at the edge, but haze and colour jump
 the edge score on an 8x box-blurred copy; over 1.5 it reports "Slight seam (tone shift)" with an explanation.
 The 1.5 threshold was set on one labelled set of 35 real crops (highest eye-labelled good: 1.49) and checked on
 a held-out set of 31 (highest good: 1.43, 7 of 9 bad caught) and the generated set (highest good: 1.20).
-The margin is thin, so it only ever says "Slight", never "Visible". Welding only softens a tone shift (worst axis: grass 2.07 → 1.94, grunge 2.57 → 2.00),
-so "Re-check the result" will still say Slight for those.
+**Strong tone shifts = Visible (added 16 Nov 2026, later the same night).** At first a tone shift could only ever say "Slight".
+Then I rolled the test photos so their wraps sit in the middle, and grunge (yellow wall above, grey wall below), sandstone and grass
+showed glaring seams while rated "Slight". Now a blurred score of 1.8 or more rates that wrap "Visible". In both real sets,
+all 7 tiles at 1.8 or above are off-centre crops (not tileable by construction) and I can see the seam in each one. The highest published tile scores 1.63.
+`node test/expect.js` checks all 7 test photos' verdicts against what I see (3 failed before the change, 7 pass after).
+Welding only softens a tone shift (worst axis: grass 2.07 → 1.94, grunge 2.57 → 2.00), so "Re-check the result" will still flag those.
 
 **Patterns with sharp edges** (checkerboards, stripes, grids). Until 15 Nov 2026 the score called a perfectly
 tiling 16 px checkerboard a "visible seam" (score 180): when fewer than 10% of pixel columns are edges, the 90th
