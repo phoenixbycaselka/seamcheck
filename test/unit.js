@@ -85,6 +85,9 @@ if (typeof W.structure !== "function") { fails++; console.log("FAIL structure() 
   check("structure: texture change flagged", !!W.structure(s2, 200, 64, true).kind, JSON.stringify(W.structure(s2, 200, 64, true)));
   // negatives: exact stripes that tile, flat image, smooth periodic waves
   const n1 = simg(64, 40, (x) => (Math.floor(x / 8) % 2) * 200), n2 = simg(64, 64, () => 90), n3 = simg(128, 64, (x, y) => 128 + 100 * Math.sin(2 * Math.PI * (x / 32 + y / 64)));
+  // exact checkerboard, 32px cells on 256: cell edges are sparse (<10% of lines), so p90 of interior ~0 (F37 holdout FP)
+  const n4 = simg(256, 64, (x, y) => ((Math.floor(x / 32) + Math.floor(y / 32)) % 2) * 200);
+  for (const hz of [true, false]) check("structure: exact 32px checkerboard" + (hz ? " x" : " y") + " not flagged", !W.structure(n4, 256, 64, hz).kind, JSON.stringify(W.structure(n4, 256, 64, hz)));
   for (const [nm, d, w, h] of [["tiling stripes", n1, 64, 40], ["flat", n2, 64, 64], ["periodic waves", n3, 128, 64]])
     for (const hz of [true, false]) check("structure: " + nm + (hz ? " x" : " y") + " not flagged", !W.structure(d, w, h, hz).kind, JSON.stringify(W.structure(d, w, h, hz)));
 }

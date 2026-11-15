@@ -8,7 +8,7 @@ withPage(async (page, go) => {
     await page.evaluate(() => { window.__loaded = false; });
     await (await page.$("#f")).uploadFile(path.resolve(f));
     await page.waitForFunction(() => window.__loaded === true, { timeout: 30000 });
-    rows.push(path.basename(f).padEnd(36) + (await page.$eval("#sc", (e) => e.innerText.split("\n").slice(0, 2).join(" | "))).slice(0, 170));
+    rows.push(path.basename(f).padEnd(36) + (await page.$eval("#sc", (e) => e.querySelector(".v").innerText + " | hidden-note: " + (e.querySelector(".hid") ? e.querySelector(".hid").innerText.slice(40, 120) : "none") + " | " + [...e.querySelectorAll("b")].map((b) => b.innerText).join(" "))));
     if (i === 0) await page.screenshot({ path: path.join(__dirname, "out", "verdict-first.png"), fullPage: true });
   }
   return rows;

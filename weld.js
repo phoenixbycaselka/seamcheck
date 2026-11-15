@@ -155,9 +155,14 @@
     const out = { tex: 0, kink: 0, period: 0, kind: null };
     if (L < 24) return out;
     // kink: second difference straddling the wrap vs interior p90
-    const d2 = (i) => { const a = Pr[(i - 1 + L) % L], b = Pr[i], c = Pr[(i + 1) % L]; let s = 0; for (let k = 0; k < m; k++) s += Math.abs(a[k] - 2 * b[k] + c[k]); return s / m; };
-    const K = []; for (let i = 2; i < L - 2; i++) K.push(d2(i));
-    out.kink = Math.max(d2(0), d2(L - 1)) / Math.max(pct(K, 0.9), 1);
+    // Only the part of the wrap's profile that no interior line reproduces counts (F37: an exact checkerboard's cell
+    // edge at the wrap is an ordinary edge; with sparse edges the interior p90 is ~0, which made it look like a cusp).
+    const d2v = (i) => { const a = Pr[(i - 1 + L) % L], b = Pr[i], c = Pr[(i + 1) % L], o = new Float32Array(m); for (let k = 0; k < m; k++) o[k] = a[k] - 2 * b[k] + c[k]; return o; };
+    const D = []; for (let i = 0; i < L; i++) D.push(d2v(i));
+    const mag = (v) => { let s = 0; for (let k = 0; k < m; k++) s += Math.abs(v[k]); return s / m; };
+    const K = []; for (let i = 2; i < L - 2; i++) K.push(mag(D[i]));
+    const left = (j) => { let b = mag(D[j]); for (let i = 2; i < L - 2 && b > 0; i++) b = Math.min(b, md(D[j], D[i])); return b; };
+    out.kink = Math.max(left(0), left(L - 1)) / Math.max(pct(K, 0.9), 1);
     // tex: per sample, activity in R lines left vs right of a boundary, mean |log ratio|; wrap vs interior p95
     const R = 8, e = 4, A = [];
     for (let i = 0; i < L; i++) { const a = Pr[i], b = Pr[(i + 1) % L], o = new Float32Array(m); for (let k = 0; k < m; k++) o[k] = Math.abs(b[k] - a[k]); A.push(o); }
