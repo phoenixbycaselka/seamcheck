@@ -58,7 +58,17 @@ and 8 noise/cloud/marble/cell tiles. **To be clear: the fix also failed two of t
 (it dropped to 4/7 on the labelled set, and it flagged one photo axis that really is visibly seamed). I then wrote a *different*
 test ("does it beat the live version without extra false alarms?"), so what follows answers a new question. It is not a retest that passed. A third unseen batch of 32 (that new test): 0 false alarms on 18 cloud/noise/marble/cell/wave/flat tiles,
 every mis-sized checkerboard caught (3/3), 1 of 3 crosshatch seams, and 1 false alarm (a smooth curve grazing the
-wrap, lines3). The 7 photos get no hidden-seam flag. Small numbers, so treat it as a hint. **Misses:** a cell off by 2 px, an odd
+wrap, lines3). The 7 photos get no hidden-seam flag. Small numbers, so treat it as a hint.
+
+**Eye-labelled check (16 Nov 2026 AEDT, `test/corpus-gen/eye1`).** 65 new tiles from two generators: tgen (seeds never used before)
+and the SVG patterns from my archived patternpack. I labelled every tile *before* scoring it, by eye on half-offset views at 2-4x, or for
+checkerboards by measuring cell widths. The labels were committed before the detector ran (`eye1/labels.csv`), and no
+thresholds changed afterwards. 10 tiles I couldn't decide are left out. Result: **21 of 25 bad tiles flagged** (the edge score alone
+caught 8). By class: checkerboard 10/11, crosshatch 5/7, lines3 2/3, pattern scales/waves 4/4. **1 false alarm in 30 good tiles**
+(a soft lines3 blur). Misses: two crosshatch tiles (one obvious fine-to-coarse switch, one brightness step), a sharp lines3 spike
+on the wrap, and a checkerboard whose odd cell lands on the wrap. In 4 of the 21 caught tiles the reported axes were incomplete.
+Caveats: I labelled these myself and could see the file names. The checkerboard, crosshatch and lines3 classes are the same
+kinds the detector was built around, so this shows it works on new seeds, not on new kinds of seam. **Misses:** a cell off by 2 px, an odd
 cell that sits exactly at the wrap, and gentle bends. **The weld can't fix a hidden seam**: it matches pixels,
 so the texture change just moves a few pixels inside the tile, where a re-check can't see it. The page says so
 after welding. Use your eyes on the offset view.
