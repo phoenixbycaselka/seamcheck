@@ -13,6 +13,7 @@ h1{margin:0 0 4px}p.s{margin:0 0 16px;color:#b9b3c9}
 label{display:flex;gap:6px;align-items:center}
 .views{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media(max-width:700px){.views{grid-template-columns:1fr}}
+#zm canvas{width:auto;max-width:100%}.zrow{display:flex;gap:16px;flex-wrap:wrap}#zm figure{margin:0}#zm figcaption{font-size:.8em;opacity:.7;margin-top:4px}
 canvas{width:100%;background:#000;border-radius:8px;image-rendering:pixelated;display:block}
 h2{font-size:14px;margin:6px 0;color:#c9b6ff;font-weight:600}
 .score{padding:14px;border-radius:10px;background:#201b2d;margin-top:16px}
@@ -31,6 +32,7 @@ small,footer{color:#9a93ad}footer{margin-top:26px}a{color:#c9b6ff}.tip{color:#ff
 <div id=res hidden>
 <div class=views><div><h2>Tiled</h2><canvas id=a></canvas></div><div><h2>Offset by half a tile (seams move to the middle)</h2><canvas id=b></canvas></div></div>
 <div class=score id=sc></div>
+<div class=score id=zm hidden></div>
 <div class=score id=fixbox>
 <h2>Make it seamless</h2>
 <div class=row>
@@ -99,6 +101,20 @@ $("fix").onclick=()=>img&&fixTile();
 $("sw").oninput=()=>$("swv").textContent=$("sw").value+"px";
 $("dl").onclick=()=>{if(!outCanvas)return;const a=document.createElement("a");a.download="seamless.png";a.href=outCanvas.toDataURL("image/png");a.click()};
 $("rechk").onclick=()=>{if(!outCanvas)return;$("exnote").hidden=true;load(outCanvas.toDataURL("image/png"));scrollTo(0,0)};
+function zoom(t,d,w,h,axes){ // close-up of the wrap at its worst spot, nearest-neighbour, seam marked by ticks only
+ const box=$("zm");box.innerHTML="";box.hidden=!axes.length;if(!axes.length)return;
+ const k=Math.max(4,Math.min(48,w>>1,h>>1)),Z=Math.max(2,Math.min(6,Math.floor(288/(2*k))));
+ box.insertAdjacentHTML("beforeend",`<h2>Seam close-up (${Z}× zoom, worst spot; the seam runs between the white ticks)</h2>`);
+ const row=document.createElement("div");row.className="zrow";box.appendChild(row);
+ for(const [name,x] of axes){const horiz=name[0]==="L",n=horiz?h:w,diff=new Float32Array(n);
+  for(let i=0;i<n;i++){const p=horiz?(i*w+w-1)*4:((h-1)*w+i)*4,q=horiz?i*w*4:i*4;diff[i]=Math.abs(d[p]-d[q])+Math.abs(d[p+1]-d[q+1])+Math.abs(d[p+2]-d[q+2])}
+  let best=0,bs=-1;for(let s=0;s+2*k<=n;s++){let v=0;for(let i=s;i<s+2*k;i++)v+=diff[i];if(v>bs){bs=v;best=s}}
+  const c=document.createElement("canvas");c.width=c.height=2*k*Z;const g=c.getContext("2d");g.imageSmoothingEnabled=false;
+  if(horiz){g.drawImage(t,w-k,best,k,2*k,0,0,k*Z,2*k*Z);g.drawImage(t,0,best,k,2*k,k*Z,0,k*Z,2*k*Z)}
+  else{g.drawImage(t,best,h-k,2*k,k,0,0,2*k*Z,k*Z);g.drawImage(t,best,0,2*k,k,0,k*Z,2*k*Z,k*Z)}
+  const m=k*Z,T=Math.max(8,Z*3);g.fillStyle="#fff";g.strokeStyle="#000";
+  for(const [a,b2] of [[0,0],[2*k*Z-T,0]]){if(horiz){g.fillRect(m-1,a,2,T);g.strokeRect(m-2,a,4,T)}else{g.fillRect(a,m-1,T,2);g.strokeRect(a,m-2,T,4)}}
+  const fig=document.createElement("figure");fig.appendChild(c);fig.insertAdjacentHTML("beforeend",`<figcaption>${name} seam · ${horiz?"rows":"columns"} ${best}–${best+2*k-1}</figcaption>`);row.appendChild(fig)}}
 function run(){
  let w=img.naturalWidth||256,h=img.naturalHeight||256;
  if(w>1024||h>1024){const k=1024/Math.max(w,h);w=Math.round(w*k);h=Math.round(h*k)}
@@ -121,6 +137,7 @@ const ew=Math.max(H.ratio,V.ratio);H.e=H.ratio;V.e=V.ratio;
    if(V.ratio>=2.5)line(c,0,Y,a.width,Y,sty(V.ratio));else{line(c,0,Y,T,Y,sty(V.ratio));line(c,a.width-T,Y,a.width,Y,sty(V.ratio))}}}
  const cls=worst<1.2?"ok":worst<2.5?"meh":"bad",txt=hid.length&&ew<2.5?"Hidden seam":worst<1.2?"Seamless":worst<2.5?"Slight seam – look closely":"Visible seam";
  const f=(x,S)=>x.e.toFixed(2)+(S.kind&&x.e<2.5?" (edges match; hidden seam)":"");
- $("sc").innerHTML=`<div class="v ${cls}">${txt}</div>${cls==="meh"&&!hid.length?`<p class=tip>On photo textures this band is often a real seam (12 of 20 seams I could see in a blind test landed here). Look at the middle of the offset view.</p>`:""}${hid.length?`<p class=hid>The pixels on either side of the wrap may match, but ${hid.join("; ")}. Check the offset view.</p>`:""}<p>Image ${w}×${h}px. Edge score (≤1 = the wrap edge is no sharper than the busiest ordinary pixel edges; higher = worse):<br>Left↔right: <b>${f(H,SH)}</b> · Top↔bottom: <b>${f(V,SV)}</b><br><small>Seam lines: <span style="color:#ff2d6f">thick pink = visible</span>, <span style="color:#ffc94a">amber = slight</span>, faint white = fine. Slight/fine seams get edge ticks only so you can see the pixels.</small></p><details><summary>How the score works</summary><small>Compares the last pixel column/row with the first, relative to the 90th-percentile difference between adjacent columns/rows (if the wrap reproduces an edge already inside the image, like a checkerboard cell edge, only the leftover mismatch counts). Around 1 or less is usually invisible; over 2.5 is almost always visible. In between ("Slight") is often a real seam on photo textures: in a blind test on 35 real CC0 textures, 12 of 20 seams I could see scored 1.6–2.5, while published seamless tiles scored under 1.2 (2 exceptions, both under 1.9). It also looks for seams whose edge pixels match: the texture getting finer or coarser at the wrap, a repeating pattern losing its rhythm, or shapes that bend instead of continuing ("Hidden seam"). A heuristic, so always check the offset view with your own eyes.</small></details>`;
+ $("sc").innerHTML=`<div class="v ${cls}">${txt}</div>${cls==="meh"&&!hid.length?`<p class=tip>On photo textures this band is often a real seam (12 of 20 seams I could see in a blind test landed here). Look at the close-up below.</p>`:""}${hid.length?`<p class=hid>The pixels on either side of the wrap may match, but ${hid.join("; ")}. See the close-up below.</p>`:""}<p>Image ${w}×${h}px. Edge score (≤1 = the wrap edge is no sharper than the busiest ordinary pixel edges; higher = worse):<br>Left↔right: <b>${f(H,SH)}</b> · Top↔bottom: <b>${f(V,SV)}</b><br><small>Seam lines: <span style="color:#ff2d6f">thick pink = visible</span>, <span style="color:#ffc94a">amber = slight</span>, faint white = fine. Slight/fine seams get edge ticks only so you can see the pixels.</small></p><details><summary>How the score works</summary><small>Compares the last pixel column/row with the first, relative to the 90th-percentile difference between adjacent columns/rows (if the wrap reproduces an edge already inside the image, like a checkerboard cell edge, only the leftover mismatch counts). Around 1 or less is usually invisible; over 2.5 is almost always visible. In between ("Slight") is often a real seam on photo textures: in a blind test on 35 real CC0 textures, 12 of 20 seams I could see scored 1.6–2.5, while published seamless tiles scored under 1.2 (2 exceptions, both under 1.9). It also looks for seams whose edge pixels match: the texture getting finer or coarser at the wrap, a repeating pattern losing its rhythm, or shapes that bend instead of continuing ("Hidden seam"). A heuristic, so always check the offset view with your own eyes.</small></details>`;
+ zoom(t,d,w,h,[["Left↔right",H],["Top↔bottom",V]].filter(([,x])=>x.ratio>=1.2));
  $("res").hidden=false;$("sw").value=Weld.defaultWidth(w,h);$("swv").textContent=$("sw").value+"px";$("wres").hidden=true;window.__loaded=true}
 </script>

@@ -1,6 +1,6 @@
 # Seamcheck
 
-Free in-browser **seamless texture tester**. Drop a PNG, JPG or SVG and see whether it tiles: tiled preview, half-offset view (moves the seams to the middle where you can see them), and a numeric seam score for both axes. Nothing is uploaded.
+Free in-browser **seamless texture tester**. Drop a PNG, JPG or SVG and see whether it tiles: tiled preview, half-offset view (moves the seams to the middle where you can see them), a numeric seam score for both axes, and (when a seam is suspected) a nearest-neighbour **close-up of the wrap** at its worst spot, so you can see the seam pixels instead of trusting the number. Nothing is uploaded.
 
 **Use it:** https://phoenixbycaselka.github.io/seamcheck/
 
