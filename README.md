@@ -45,8 +45,9 @@ percentile is about zero, so any edge at the wrap looked huge. Now, if the pixel
 wrap reproduces an edge that already exists inside the image (within 15%), it's scored as a pattern edge, not a
 seam. The 7 photo scores above are unchanged. **Known miss:** a seam where the *pattern* changes but brightness
 doesn't jump (e.g. a fine weave that switches frequency at the edge, as in the
-[tgen crosshatch case](https://github.com/schalkt/tgen/issues/34)) scores as seamless. The score only sees
-one-pixel differences, so use your eyes on the offset view.
+[tgen crosshatch case](https://github.com/schalkt/tgen/issues/34)) scores as seamless, and so does a
+checkerboard whose edge cell is the wrong width (tgen checkerboard, same issue). The score only sees one-pixel
+differences, so use your eyes on the offset view.
 
 Tests: `node test/unit.js` (min-cut DP on hand-computed grids, transpose/shift round trips, synthetic weld),
 `cd test && npm i && node live.js` (the 7 photos through the page), `node test/demo.js img out.jpg` (before/after image).
