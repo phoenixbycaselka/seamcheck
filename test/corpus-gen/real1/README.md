@@ -5,3 +5,7 @@ Each one appears twice: the full published tile and a 60% off-centre crop (not t
 shuffled under neutral names. Images are not committed (size); rebuild with `gen-real1.js` from the Poly Haven 1k diffuse JPGs.
 `labels.csv` = my eye labels from half-offset contact sheets (sheet.js, plus a 4x zoom on unsure tiles), committed BEFORE
 I opened `key.csv` or ran the detector. Caveat: a crop is zoomed 1.67x relative to its full tile, so a pair is recognisable when both are visible.
+
+## Result (frozen detector at 6878a8d, `node test/corpus-gen/eval-real1.js`)
+full tiles: eye-good 17 -> all clean (max edge 1.12); eye-? 2 -> clean/slight; eye-bad 2 -> both clean (r34 = my error: slab joints; r14 = faint soft band near the wrap, unclear).
+crops: eye-bad 11 -> 4 Visible + 7 Slight (0 clean); eye-good 8 -> 3 clean + 5 Slight; eye-? 2 -> Slight.
