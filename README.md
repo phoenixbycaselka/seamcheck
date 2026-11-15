@@ -27,6 +27,10 @@ Tested on 7 CC0 photos (grass, gravel, grunge, sand, sandstone, stone wall, wood
 driven through the real page in headless Chromium (`node test/live.js`). All 7 went from scores of 0.95–4.52
 to ≤ 1.08 on both axes, and no interior column or row in any result scores above 1.72.
 
+An imperfect case, so you can judge for yourself (strong diagonal structure; scores pass, the bands still break on a close look):
+
+![before and after weld, sandstone photo](docs/before-after-sandstone.jpg)
+
 **Honest limits.** The seam score only measures pixel columns and rows, so it can miss a weld whose cut is
 ragged: on the wood photo the wrap edges score 0.5 but the weld line is plainly visible because the grain runs
 in one direction and no horizontal shift lines it up. The page now also reports the *cut cost* (mean pixel
