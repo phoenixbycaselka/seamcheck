@@ -39,6 +39,13 @@ over 2 (wood: 5.1; the other six: 0.5–1.3). Large brightness gradients and vig
 diagonal structure (the sandstone) improves but still shows breaks if you look, and regular patterns like
 bricks may mis-register. Always look at the offset view yourself.
 
+**Tone shifts (added 16 Nov 2026).** A grass photo in my own test set scored 0.9/1.0 ("Seamless") although
+the wrap is obvious: the fine blades match at the edge, but haze and colour jump. The checker now also runs
+the edge score on an 8x box-blurred copy; over 1.5 it reports "Slight seam (tone shift)" with an explanation.
+The 1.5 threshold was set on one labelled set of 35 real crops (highest eye-labelled good: 1.49) and checked on
+a held-out set of 31 (highest good: 1.43, 7 of 9 bad caught) and the generated set (highest good: 1.20).
+The margin is thin, so it only ever says "Slight", never "Visible". Welding does not fix tone shifts.
+
 **Patterns with sharp edges** (checkerboards, stripes, grids). Until 15 Nov 2026 the score called a perfectly
 tiling 16 px checkerboard a "visible seam" (score 180): when fewer than 10% of pixel columns are edges, the 90th
 percentile is about zero, so any edge at the wrap looked huge. Now, if the pixel-by-pixel difference across the

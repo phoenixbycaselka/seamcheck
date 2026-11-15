@@ -88,7 +88,7 @@ function fixTile(){
   r.method=meth;const o=new ImageData(w,h);o.data.set(out);c.putImageData(o,0,0);outCanvas=t;
   const rc=$("resc"),rb=$("resb");rc.width=rb.width=Math.min(w*2,1500);rc.height=rb.height=Math.min(h*2,1500);
   for(const [cv,x0,y0] of [[rc,0,0],[rb,-(w>>1),-(h>>1)]]){const cc=cv.getContext("2d");cc.imageSmoothingEnabled=false;for(let y=-1;y<3;y++)for(let x=-1;x<3;x++)cc.drawImage(t,x0+x*w,y0+y*h)}
-  const f=v=>v.toFixed(2),aft=Math.max(r.after.x,r.after.y),wst=Math.max(r.worst.x.ratio,r.worst.y.ratio),cut=Math.max(r.cut.x,r.cut.y);
+  const f=d1,aft=Math.max(r.after.x,r.after.y),wst=Math.max(r.worst.x.ratio,r.worst.y.ratio),cut=Math.max(r.cut.x,r.cut.y);
   const hidIn=[true,false].some(hz=>Weld.structure(d,w,h,hz).kind); // F37: a weld matches pixels; it can't fix a texture/rhythm change, it only moves it off the wrap
   const verdict=hidIn&&!(aft>2||wst>3)?`<span class=meh>Edges match now, but this image had a hidden seam (texture or rhythm change) and a ${meth} can't fix that: it usually just moves it a little way inside the tile, where the re-check can't see it.</span> Look at the offset view; the real fix is in whatever generated the texture.`
    :aft>2||wst>3?`<span class=bad>The ${meth} could not hide the seam.</span> Usually a large-scale brightness gradient, vignette or perspective; try cropping an evenly lit part first.`
@@ -102,10 +102,11 @@ $("fix").onclick=()=>img&&fixTile();
 $("sw").oninput=()=>$("swv").textContent=$("sw").value+"px";
 $("dl").onclick=()=>{if(!outCanvas)return;const a=document.createElement("a");a.download="seamless.png";a.href=outCanvas.toDataURL("image/png");a.click()};
 $("rechk").onclick=()=>{if(!outCanvas)return;$("exnote").hidden=true;load(outCanvas.toDataURL("image/png"));scrollTo(0,0)};
+const d1=v=>(Math.floor(v*10+1e-9)/10).toFixed(1); // F61: 1 decimal, rounded DOWN so the number never crosses a verdict threshold the verdict did not
 function zoom(t,d,w,h,axes){ // close-up of the wrap at its worst spot, nearest-neighbour, seam marked by ticks only
  const box=$("zm");box.innerHTML="";box.hidden=!axes.length;if(!axes.length)return;
  const k=Math.max(4,Math.min(48,w>>1,h>>1)),Z=Math.max(2,Math.min(6,Math.floor(288/(2*k))));
- box.insertAdjacentHTML("beforeend",`<h2>Seam close-up (${Z}× zoom, worst spot; the seam runs between the white ticks)</h2>`);
+ box.insertAdjacentHTML("beforeend",`<h2>Seam close-up (enlarged, worst spot; the seam runs between the white ticks)</h2>`);
  const row=document.createElement("div");row.className="zrow";box.appendChild(row);
  for(const [name,x] of axes){const horiz=name[0]==="L",n=horiz?h:w,diff=new Float32Array(n);
   for(let i=0;i<n;i++){const p=horiz?(i*w+w-1)*4:((h-1)*w+i)*4,q=horiz?i*w*4:i*4;diff[i]=Math.abs(d[p]-d[q])+Math.abs(d[p+1]-d[q+1])+Math.abs(d[p+2]-d[q+2])}
@@ -127,20 +128,23 @@ function run(){
  for(let y=-1;y<R+1;y++)for(let x=-1;x<R+1;x++){ac.drawImage(t,x*w,y*h);bc.drawImage(t,x*w-ox,y*h-oy)}
  const H=seam(d,w,h,true),V=seam(d,w,h,false),SH=Weld.structure(d,w,h,true),SV=Weld.structure(d,w,h,false);
 const ew=Math.max(H.ratio,V.ratio);H.e=H.ratio;V.e=V.ratio;
+ H.t=Weld.toneRatio(d,w,h,true);V.t=Weld.toneRatio(d,w,h,false);H.ts=H.t>1.5&&H.e<1.2;V.ts=V.t>1.5&&V.e<1.2; // F61 tone shift: edges blend, brightness/colour jumps
+ if(H.ts)H.ratio=Math.max(H.ratio,1.2);if(V.ts)V.ratio=Math.max(V.ratio,1.2);
  if(SH.kind)H.ratio=Math.max(H.ratio,2.5);if(SV.kind)V.ratio=Math.max(V.ratio,2.5); // hidden seam: draw it as visible
  const worst=Math.max(H.ratio,V.ratio),hid=[SH.kind&&H.e<2.5&&"at the left↔right wrap "+SH.kind,SV.kind&&V.e<2.5&&"at the top↔bottom wrap "+SV.kind].filter(Boolean);
  if($("hl").checked){const sty=r=>r<1.2?["rgba(255,255,255,.35)",1,[3,5]]:r<2.5?["#ffc94a",2,[6,4]]:["#ff2d6f",3,[8,4]];
   const line=(c,x1,y1,x2,y2,[col,lw,dash])=>{if(x1==x2?(x1<2||x1>a.width-2):(y1<2||y1>a.height-2))return;c.setLineDash([]);c.strokeStyle=lw>1?"rgba(0,0,0,.6)":"rgba(0,0,0,.2)";c.lineWidth=lw+(lw>1?2:1);c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke();
    c.setLineDash(dash);c.strokeStyle=col;c.lineWidth=lw;c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke()};
   for(const [c,x0,y0] of [[ac,0,0],[bc,-ox,-oy]])for(let i=0;i<=R+1;i++){
-   const X=x0+i*w+.5,Y=y0+i*h+.5,T=14; // slight/fine seams: edge ticks only, so the seam itself stays visible
-   if(H.ratio>=2.5)line(c,X,0,X,a.height,sty(H.ratio));else{line(c,X,0,X,T,sty(H.ratio));line(c,X,a.height-T,X,a.height,sty(H.ratio))}
-   if(V.ratio>=2.5)line(c,0,Y,a.width,Y,sty(V.ratio));else{line(c,0,Y,T,Y,sty(V.ratio));line(c,a.width-T,Y,a.width,Y,sty(V.ratio))}}}
+   const X=x0+i*w+.5,Y=y0+i*h+.5,T=14; // slight seams: edge ticks only; clean seams (<1.2): no mark (F61: grey ticks looked like debris), so the seam itself stays visible
+   if(H.ratio>=2.5)line(c,X,0,X,a.height,sty(H.ratio));else if(H.ratio>=1.2){line(c,X,0,X,T,sty(H.ratio));line(c,X,a.height-T,X,a.height,sty(H.ratio))}
+   if(V.ratio>=2.5)line(c,0,Y,a.width,Y,sty(V.ratio));else if(V.ratio>=1.2){line(c,0,Y,T,Y,sty(V.ratio));line(c,a.width-T,Y,a.width,Y,sty(V.ratio))}}}
  const cls=worst<1.2?"ok":worst<2.5?"meh":"bad",txt=hid.length&&ew<2.5?"Hidden seam":worst<1.2?"Seamless":worst<2.5?"Slight seam – look closely":"Visible seam";
- const f=(x,S)=>x.e.toFixed(2)+(S.kind&&x.e<2.5?" (edges match; hidden seam)":"");
- $("sc").innerHTML=`<div class="v ${cls}">${txt}</div>${cls==="meh"&&!hid.length?`<p class=tip>On photo textures this band is often a real seam (12 of 20 seams I could see in a blind test landed here). Look at the close-up below.</p>`:""}${hid.length?`<p class=hid>The pixels on either side of the wrap may match, but ${hid.join(", and ")}. See the close-up below.</p>`:""}<p>Image ${w}×${h}px. Edge score (≤1 = the wrap edge is no sharper than the busiest ordinary pixel edges; higher = worse):<br>Left↔right: <b>${f(H,SH)}</b> · Top↔bottom: <b>${f(V,SV)}</b><br><small>Seam lines: <span style="color:#ff2d6f">thick pink = visible</span>, <span style="color:#ffc94a">amber = slight</span>, faint white = fine. Slight/fine seams get edge ticks only so you can see the pixels.</small></p><details><summary>How the score works</summary><small>Compares the last pixel column/row with the first, relative to the 90th-percentile difference between adjacent columns/rows (if the wrap reproduces an edge already inside the image, like a checkerboard cell edge, only the leftover mismatch counts). Around 1 or less is usually invisible; over 2.5 is almost always visible. In between ("Slight") is often a real seam on photo textures: in a blind test on 35 real CC0 textures, 12 of 20 seams I could see scored 1.6–2.5, while published seamless tiles scored under 1.2 (2 exceptions, both under 1.9). It also looks for seams whose edge pixels match: the texture getting finer or coarser at the wrap, a repeating pattern losing its rhythm, or shapes that bend instead of continuing ("Hidden seam"). A heuristic, so always check the offset view with your own eyes.</small></details>`;
- const ax=(n,x,S)=>`${n} ${x.e.toFixed(2)}${S.kind&&x.e<2.5?" (hidden seam)":""}`;
- $("quick").innerHTML=txt==="Hidden seam"?`<b class=${cls}>Hidden seam:</b> the edge pixels match, but ${hid.join(", and ")}. <small>Check the offset view · <a href="#sc">details</a></small>`:`<b class=${cls}>${txt}</b> · ${ax("left↔right",H,SH)} · ${ax("top↔bottom",V,SV)} <small>(≤1.2 seamless, ≥2.5 visible) · <a href="#sc">details</a></small>`;
+ const f=(x,S)=>d1(x.e)+(S.kind&&x.e<2.5?" (edges match; hidden seam)":x.ts?" (edges blend; tone shift "+d1(x.t)+")":"");
+ const tsh=[H.ts&&!SH.kind&&"left↔right",V.ts&&!SV.kind&&"top↔bottom"].filter(Boolean);
+ $("sc").innerHTML=`<div class="v ${cls}">${txt}</div>${tsh.length&&!hid.length?`<p class=tip>The pixels right at the ${tsh.join(" and ")} wrap blend in, but the brightness or colour shifts across it (blur the image and the step is still there). Busy fine detail can hide this from the edge score; your eye usually still sees a tile boundary. Look at the offset view.</p>`:""}${cls==="meh"&&!hid.length&&!tsh.length?`<p class=tip>On photo textures this band is often a real seam (12 of 20 seams I could see in a blind test landed here). Look at the close-up below.</p>`:""}${hid.length?`<p class=hid>The pixels on either side of the wrap may match, but ${hid.join(", and ")}. See the close-up below.</p>`:""}<p>Image ${w}×${h}px. Edge score (≤1 = the wrap edge is no sharper than the busiest ordinary pixel edges; higher = worse):<br>Left↔right: <b>${f(H,SH)}</b> · Top↔bottom: <b>${f(V,SV)}</b><br><small>Seam lines: <span style="color:#ff2d6f">thick pink = visible</span>, <span style="color:#ffc94a">amber = slight</span>. Slight seams get edge ticks only so you can see the pixels; clean seams get no mark.</small></p><details><summary>How the score works</summary><small>Compares the last pixel column/row with the first, relative to the 90th-percentile difference between adjacent columns/rows (if the wrap reproduces an edge already inside the image, like a checkerboard cell edge, only the leftover mismatch counts). Around 1 or less is usually invisible; over 2.5 is almost always visible. In between ("Slight") is often a real seam on photo textures: in a blind test on 35 real CC0 textures, 12 of 20 seams I could see scored 1.6–2.5, while published seamless tiles scored under 1.2 (2 exceptions, both under 1.9). It also looks for seams whose edge pixels match: the texture getting finer or coarser at the wrap, a repeating pattern losing its rhythm, or shapes that bend instead of continuing ("Hidden seam"). A heuristic, so always check the offset view with your own eyes.</small></details>`;
+ const ax=(n,x,S)=>`${n} ${d1(x.e)}${S.kind&&x.e<2.5?" (hidden seam)":x.ts?" (tone shift)":""}`;
+ $("quick").innerHTML=txt==="Hidden seam"?`<b class=${cls}>Hidden seam:</b> the edge pixels match, but ${hid.join(", and ")}. <small>Check the offset view · <a href="#sc">details</a></small>`:`<b class=${cls}>${txt}</b> · ${ax("left↔right",H,SH)} · ${ax("top↔bottom",V,SV)} <small>(under 1.2 seamless, 2.5+ visible) · <a href="#sc">details</a></small>`;
  zoom(t,d,w,h,[["Left↔right",H],["Top↔bottom",V]].filter(([,x])=>x.ratio>=1.2));
  $("res").hidden=false;$("sw").value=Weld.defaultWidth(w,h);$("swv").textContent=$("sw").value+"px";$("wres").hidden=true;window.__loaded=true}
 </script>

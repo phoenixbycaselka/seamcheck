@@ -34,6 +34,18 @@
     const eff = match <= 0.15 * wrap ? match : wrap;
     return { wrap, p90, match, ratio: eff / Math.max(p90, 1) };
   }
+  // F61: low-frequency ("tone") seam: the edge ratio on an FxF box-averaged image. Catches brightness/colour/haze shifts
+  // across the wrap that busy fine detail hides from the edge score (a grass photo scored 0.9 edge, 2.07 tone).
+  // Threshold 1.5 set on corpus real1 (max eye-good 1.49), held out on real2 (max good 1.43) and the tgen set (max good 1.20).
+  function toneRatio(d, w, h, horiz, F = 8) {
+    const sw = Math.floor(w / F), sh = Math.floor(h / F);
+    if (sw < 4 || sh < 4) return 0;
+    const o = new Float32Array(sw * sh * 4);
+    for (let y = 0; y < sh * F; y++) for (let x = 0; x < sw * F; x++) {
+      const p = (y * w + x) * 4, q = (((y / F) | 0) * sw + ((x / F) | 0)) * 4;
+      for (let j = 0; j < 3; j++) o[q + j] += d[p + j] / (F * F); }
+    return seamRatio(o, sw, sh, horiz).ratio;
+  }
   // Worst boundary anywhere (interior AND wrap), per axis, relative to that axis's p90. Catches bad cuts.
   function worstSeam(d, w, h) {
     const out = {};
@@ -214,5 +226,5 @@
 
   function defaultWidth(W, H) { return Math.max(24, Math.min(160, Math.round(Math.min(W, H) / 6))); }
 
-  return { edge, seamRatio, structure, worstSeam, minCutPath, transpose, shift, weldVertical, weld, defaultWidth };
+  return { edge, seamRatio, toneRatio, structure, worstSeam, minCutPath, transpose, shift, weldVertical, weld, defaultWidth };
 });
