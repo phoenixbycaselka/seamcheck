@@ -76,7 +76,7 @@ after welding. Use your eyes on the offset view.
 **Real textures, blind labels (15 Nov 2026, `test/corpus-gen/real1`).** 21 CC0 textures from Poly Haven, picked
 mechanically (every 43rd asset by name), each one shown both as the published tile and as a 60% off-centre crop (a crop can't tile).
 All 42 were shuffled under neutral names and labelled by eye *before* I opened the key or ran the detector. No code changed.
-- **Published tiles: 0 of 21 flagged, and 0 shown as "Slight seam".** The highest edge score among them was 1.22.
+- **Published tiles: 0 of 21 flagged.** 1 of 21 shows "Slight seam" (a roof-tile texture at 1.22, just over the 1.2 line); the rest score "Seamless".
 - **Crops with a seam I could see (11): 4 get "Visible seam", the other 7 get "Slight seam – look closely"** (edge scores 1.6–2.3).
   None was called seamless. So on photo textures a *clearly visible* seam often scores below 2.5. Treat "Slight seam" as "go and look", not "fine".
 - Crops I couldn't see a seam in (8): 3 scored clean, 5 slight. Low-detail fabrics and asphalt hide a crop seam from the eye too.
